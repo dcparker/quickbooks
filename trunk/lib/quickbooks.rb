@@ -1,3 +1,4 @@
+#-- 
 # Copyright (c) 2006 Chris Bruce
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -14,5 +15,26 @@
 # NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER 
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE 
 # OR OTHER DEALINGS IN THE SOFTWARE.
-
+#++
+# QuickBooks::Session is used to communicate with QuickBooks RDS Server.  You need to configure
+# your QuickBooks software to allow RDS connection from application.
+# 
+#   require 'quickbooks'
+#   
+#   session = QuickBooks::Session.new('admin', 'pass', 'My Test App')
+#   session.open
+#   xml = <<END
+#   <?xml version="1.0"?>
+#   <?qbxml version="3.0"?>
+#   <QBXML>
+#   <QBXMLMsgsRq onError="continueOnError">
+#    <InvoiceQueryRq requestID="1">
+#      <RefNumber>81</RefNumber>
+#      <IncludeLineItems>true</IncludeLineItems>
+#    </InvoiceQueryRq>
+#   </QBXMLMsgsRq>
+#   </QBXML>
+#   <<END
+#   session.send(xml)
+#   session.close 
 require 'quickbooks/session'

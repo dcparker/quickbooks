@@ -1,0 +1,46 @@
+== Welcome to QuickBooks for Ruby
+
+QuickBooks is a module that allows you to connect to QuickBooks and QuickBooks Merchant
+Services via the QuickBooks SDK (QBXML).  You need to configure the QuickBooks Remote Data 
+Sharing Server (RDS) in order to connect.  The RDS server allows you to use the SDK over
+https webservice.  This means that you can communicate with QuickBooks from non-Windows 
+operating systems.
+
+== Download
+
+* http://rubyforge.org/projects/quickbooks
+* svn checkout svn://rubyforge.org/var/svn/quickbooks/trunk
+
+== Status
+
+This library is a work in progress and has very limited capabilities right now.  There is
+a Session class that will let you connect to QuickBooks and send QBXML directly.  I am in 
+the process of implementing all the messages that you can send and recieve in an easy to 
+use class structure.
+
+== Usage
+
+You can use the QuickBooks::Session class to talk to the RDS server:
+
+      session = QuickBooks::Session.new('admin', 'pass123', 'My Test App')
+      session.open
+      xml = <<EOL
+	<?xml version="1.0"?>
+	<?qbxml version="3.0"?>
+	<QBXML>
+	  <QBXMLMsgsRq onError="continueOnError">
+	    <InvoiceQueryRq requestID="1">
+	      <RefNumber>81</RefNumber>
+	      <IncludeLineItems>true</IncludeLineItems>
+	    </InvoiceQueryRq>
+	  </QBXMLMsgsRq>
+	</QBXML>
+	EOL
+      session.send(xml)
+      session.close 
+
+== Authors
+  
+* Chris Bruce (mailto:chrisabruce@yahoo.com)
+
+This library is released under the terms of the MIT License.
