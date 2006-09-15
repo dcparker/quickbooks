@@ -5,7 +5,7 @@ require 'rake/rdoctask'
 require 'rake/gempackagetask'
 require 'rake/contrib/rubyforgepublisher'
 
-PKG_VERSION = "0.0.1"
+PKG_VERSION = "0.0.2"
 
 PKG_FILES = FileList[
     "lib/**/*", "test/**/*", "[A-Z]*", "Rakefile", "doc/**/*"
