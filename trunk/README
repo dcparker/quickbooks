@@ -14,16 +14,16 @@ operating systems.
 == Status
 
 This library is a work in progress and has very limited capabilities right now.  There is
-a Session class that will let you connect to QuickBooks and send QBXML directly.  I am in 
+a Connection class that will let you connect to QuickBooks and send QBXML directly.  I am in 
 the process of implementing all the messages that you can send and recieve in an easy to 
 use class structure.
 
 == Usage
 
-You can use the QuickBooks::Session class to talk to the RDS server:
+You can use the QuickBooks::Connection class to talk to the RDS server:
 
-      session = QuickBooks::Session.new('admin', 'pass123', 'My Test App')
-      session.open
+      connection = QuickBooks::Connection.new('admin', 'pass123', 'My Test App')
+      connection.open
       xml = <<EOL
 	<?xml version="1.0"?>
 	<?qbxml version="3.0"?>
@@ -36,11 +36,15 @@ You can use the QuickBooks::Session class to talk to the RDS server:
 	  </QBXMLMsgsRq>
 	</QBXML>
 	EOL
-      session.send(xml)
-      session.close 
+      connection.send(xml)
+      connection.close 
 
 == Authors
   
 * Chris Bruce (mailto:chrisabruce@yahoo.com)
 
 This library is released under the terms of the MIT License.
+
+== Changes
+
+I renamed QuickBooks::Session to QuickBooks::Connection as it seems more intuitive.
