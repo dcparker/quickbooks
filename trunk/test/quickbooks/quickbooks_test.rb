@@ -1,14 +1,15 @@
 require File.dirname(__FILE__) + '/../test_helper'
 
 class QuickBooksTest < Test::Unit::TestCase
-  def setup		
+  include QuickBooks
+  def setup
+    Models::Base.establish_connection('admin', 'pass123', 'My Test App')
   end
   
   # This test assumes you have RDS configured with the following name and password
   # and that you are using the sample company that comes with QuickBooks.
   def test_connection        
-    connection = QuickBooks::Connection.new('admin', 'pass123', 'My Test App')
-    connection.open
+    connection = Connection.new('admin', 'pass123', 'My Test App')
     xml = <<EOL
 <?xml version="1.0"?>
 <?qbxml version="3.0"?>
@@ -21,14 +22,15 @@ class QuickBooksTest < Test::Unit::TestCase
   </QBXMLMsgsRq>
 </QBXML>
 EOL
-    res = connection.send(xml)
+    res = connection.send_raw(xml)
     assert_not_nil(res)
-    connection.close 
   end
   
   def test_model_connection
-      QuickBooks::Models::Base.establish_connection('admin', 'pass123', 'My Test App')
-      assert_not_nil(QuickBooks::Models::Base.connection)
+      assert_not_nil(Models::Base.connection)
   end
   
+  def test_customer_query
+    puts Models::Customer.find("Kristy Abercrombie")
+  end
 end

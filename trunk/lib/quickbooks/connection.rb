@@ -25,6 +25,8 @@ module QuickBooks
     require 'cgi'
     require 'soap/wsdlDriver'
     
+    QBXML_VERSION = "3.0"
+    
     attr_accessor :user, :password, :application_name, :host, :port
     
     # Initializes an instance of QuickBooks::Session
@@ -49,14 +51,31 @@ module QuickBooks
     
     # Opens a connection to a QuickBooks RDS Server
     def open
-      @soap_client = SOAP::WSDLDriverFactory.new("https://#{@host}:#{@port}/QBXMLRemote?wsdl").create_rpc_driver
+      @soap_client ||= SOAP::WSDLDriverFactory.new("https://#{@host}:#{@port}/QBXMLRemote?wsdl").create_rpc_driver
       @ticket = @soap_client.OpenConnectionAndBeginSession(@user, @password, '', @application_name, '', @mode)
       return @ticket
     end
     
-    # Send a QBXML message to QuickBooks RDS Server
+    # Send a raw (unprocessed) QBXML message to QuickBooks RDS Server
+    def send_raw(xml)
+      open
+      @soap_client.ProcessRequest(@ticket, xml)
+      close     
+    end
+    
+    # Send a specific message to server, however it is wrapped with
+    # correct xml instruction and QBXML Version.
     def send(xml)
-      @soap_client.ProcessRequest(@ticket, xml)      
+      msg = <<EOL
+<?xml version="1.0"?>
+<?qbxml version="#{QBXML_VERSION}"?>
+<QBXML>
+  <QBXMLMsgsRq onError="continueOnError">
+    #{xml}</QBXMLMsgsRq>
+</QBXML>
+EOL
+      puts msg
+      @soap_client.ProcessRequest(@ticket, xml)
     end
     
     # Close the session to QuickBooks RDS Server

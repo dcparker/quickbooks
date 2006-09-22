@@ -36,7 +36,7 @@ You can use the QuickBooks::Connection class to talk to the RDS server:
 	  </QBXMLMsgsRq>
 	</QBXML>
 	EOL
-      connection.send(xml)
+      connection.send_raw(xml)
       connection.close 
 
 == Authors
