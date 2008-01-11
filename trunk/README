@@ -1,10 +1,10 @@
 == Welcome to QuickBooks for Ruby
 
-QuickBooks is a module that allows you to connect to QuickBooks and QuickBooks Merchant
-Services via the QuickBooks SDK (QBXML).  You need to configure the QuickBooks Remote Data 
-Sharing Server (RDS) in order to connect.  The RDS server allows you to use the SDK over
-https webservice.  This means that you can communicate with QuickBooks from non-Windows 
-operating systems.
+The purpose of this gem is to perform connectivity and communication with Quickbooks, providing the user with access to quickbooks data as everyday ruby objects. This could be understood to be somewhat like an ORM, but it is different in that its models are predefined by the Quickbooks API.
+
+In releases prior to 1.0, some knowledge of the Quickbooks API will be required. In releases beyond 1.0, the Quickbooks API should be fully hidden from your view.
+
+Enjoy and PLEASE contribute either by suggestion or by submitting patches, etc. Or if development seems slow, please feel free to join! My work on this project has been solely for my own use of the gem, while opening up its achievements for others to use as well. Development may slow down considerably when I find it is at a stable and usable point for my needs. You've been warned! ;)
 
 == Download
 
@@ -13,38 +13,28 @@ operating systems.
 
 == Status
 
-This library is a work in progress and has very limited capabilities right now.  There is
-a Connection class that will let you connect to QuickBooks and send QBXML directly.  I am in 
-the process of implementing all the messages that you can send and recieve in an easy to 
-use class structure.
+This library is a work in progress and has limited capabilities right now. As of version 0.0.3, the Customer model is the only one proven
+to be in working condition, and that even with some bugs. It is stable in the capabilities that are defined, but there are some points
+where the usability needs improvement. I have attempted to make the Quickbooks:: family of models to work much like DataMapper models, with their finder methods and such.
 
 == Usage
 
-You can use the QuickBooks::Connection class to talk to the RDS server:
+Simply include this gem in your project:
+  require 'rubygems'
+  gem 'quickbooks'
 
-      connection = QuickBooks::Connection.new('admin', 'pass123', 'My Test App')
-      connection.open
-      xml = <<EOL
-	<?xml version="1.0"?>
-	<?qbxml version="3.0"?>
-	<QBXML>
-	  <QBXMLMsgsRq onError="continueOnError">
-	    <InvoiceQueryRq requestID="1">
-	      <RefNumber>81</RefNumber>
-	      <IncludeLineItems>true</IncludeLineItems>
-	    </InvoiceQueryRq>
-	  </QBXMLMsgsRq>
-	</QBXML>
-	EOL
-      connection.send_raw(xml)
-      connection.close 
+Without any configuration, you should be able to talk to Quickbooks immediately if it and a company file is open on the same computer:
+  c = Quickbooks::Customer.first
+  c.phone = '(123) 456-7890'
+  c.save
 
 == Authors
   
 * Chris Bruce (mailto:chrisabruce@yahoo.com)
+* Daniel Parker (mailto:gems@behindlogic.com)
 
 This library is released under the terms of the MIT License.
 
 == Changes
 
-I renamed QuickBooks::Session to QuickBooks::Connection as it seems more intuitive.
+* Initial import of a new rewrite at version 0.0.3

@@ -1,9 +1,7 @@
-begin
-   require 'rubygems'
-   require_gem 'builder', '~> 1.2'
-rescue LoadError
-   require 'builder'
-end
-
+require 'rubygems'
 require 'quickbooks/connection'
-require 'quickbooks/models/models'
+require 'quickbooks/base'
+require 'quickbooks/models/list_item'
+require 'quickbooks/models/transaction'
+
+require 'quickbooks/models/customer'

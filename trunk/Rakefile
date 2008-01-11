@@ -5,22 +5,18 @@ require 'rake/rdoctask'
 require 'rake/gempackagetask'
 require 'rake/contrib/rubyforgepublisher'
 
-PKG_VERSION = "0.0.2"
+PKG_NAME = 'quickbooks'
+PKG_VERSION = "0.0.3"
 
 PKG_FILES = FileList[
-    "lib/**/*", "test/**/*", "[A-Z]*", "Rakefile", "doc/**/*"
+    "lib/**/*", "rspec/**/*", "[A-Z]*", "Rakefile", "doc/**/*"
 ]
 
 desc "Default Task"
-task :default => [ :test ]
-
-# Run the unit tests
-desc "Run all unit tests"
-Rake::TestTask.new("test") { |t|
-  t.libs << "lib"
-  t.pattern = 'test/*/*_test.rb'
-  t.verbose = true
-}
+task :default => [ :test ] do
+  # Run the unit tests
+  desc "Run all rspec tests (rake task not yet implemented!)"
+end
 
 # Make a console, useful when working on tests
 desc "Generate a test console"
@@ -38,37 +34,28 @@ Rake::RDocTask.new("doc") { |rdoc|
   rdoc.rdoc_files.include('lib/**/*.rb')
 }
 
-# Genereate the package
+# Generate the package
 spec = Gem::Specification.new do |s|
-
   #### Basic information.
-
-  s.name = 'quickbooks'
+  s.name = PKG_NAME
   s.version = PKG_VERSION
-  s.summary = <<-EOF
-   A module to connect to QuickBooks through the QuickBooks SDK.
-  EOF
-  s.description = <<-EOF
-   A module to connect to QuickBooks and QuickBooks Merchant Services through the QuickBooks SDK.
-  EOF
+  s.platform = Gem::Platform::RUBY
+  s.description = s.summary = "A module to connect to QuickBooks through the QuickBooks SDK using WIN32OLE (other connection types to come)."
 
   #### Which files are to be included in this gem?  Everything!  (Except CVS directories.)
-
   s.files = PKG_FILES
 
   #### Load-time details: library and application (you will need one or both).
-
   s.require_path = 'lib'
   s.autorequire = 'quickbooks'
 
   #### Documentation and testing.
-
   s.has_rdoc = true
+  s.extra_rdoc_files = ["README", "LICENSE"]
 
   #### Author and project details.
-
-  s.author = "Chris Bruce"
-  s.email = "chrisabruce@yahoo.com"
+  s.author = "Chris Bruce & Daniel Parker"
+  s.email = "gems@behindlogic.com"
   s.homepage = "http://quickbooks.rubyforge.org"
 end
 
@@ -81,12 +68,11 @@ desc "Report code statistics (KLOCs, etc) from the application"
 task :stats do
   require 'code_statistics'
   CodeStatistics.new(
-    ["Library", "lib"],
-    ["Units", "test"]
+    ["Library", "lib"]
   ).to_s
 end
 
 desc "Publish new documentation"
 task :publish => [:doc] do
-   `pscp -r doc/* rubyforge:/var/www/gforge-projects/quickbooks/`
+  `pscp -r doc/* rubyforge:/var/www/gforge-projects/quickbooks/`
 end
