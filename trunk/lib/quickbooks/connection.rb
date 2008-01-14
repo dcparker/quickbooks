@@ -42,6 +42,7 @@ module Quickbooks
       @quickbooks = Ole.new('QBXMLRP2.RequestProcessor', 'QBXMLRP2 1.0 Type Library')
       @connection_type = @quickbooks.get_variable(connection_type)
       @connection_mode = @quickbooks.get_variable('qbFileOpen'+connection_mode)
+      connection # Just to make it fail now instead of later if it can't connect properly.
     end
 
     # Returns true if there is an open connection to Quickbooks, false if not. Use session? to determine an open session.
@@ -56,7 +57,7 @@ module Quickbooks
 
     # Sends a request to Quickbooks. This request should be a valid QBXML request. Use Quickbooks::Qbxml::Request to generate valid requests.
     def send_xml(xml)
-      @quickbooks.ProcessRequest(session, xml)
+      connection.ProcessRequest(session, xml)
     rescue => e
       warn "ERROR processing request:\n#{xml}"
       raise # Reraises the original error, only this way we got the xml output
