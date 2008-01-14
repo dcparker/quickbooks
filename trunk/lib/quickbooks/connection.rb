@@ -95,7 +95,7 @@ module Quickbooks
     # Close the connection to Quickbooks. Automatically ends the session, if there is one.
     def close
       end_session
-      if connected? && connection.CloseConnection(@session)
+      if connected? && connection.CloseConnection
         @connected = false
         @connection = nil
         Quickbooks::Connection.connections = Quickbooks::Connection.connections - [self]
