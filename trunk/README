@@ -15,7 +15,7 @@ Enjoy and PLEASE contribute either by suggestion or by submitting patches, etc. 
 
 This library is a work in progress and has limited capabilities right now. As of version 0.0.3, the Customer model is the only one proven
 to be in working condition, and that even with some bugs. It is stable in the capabilities that are defined, but there are some points
-where the usability needs improvement. I have attempted to make the Quickbooks:: family of models to work much like DataMapper models, with their finder methods and such.
+where the usability needs improvement. I have attempted to make the Quickbooks family of models to work much like DataMapper models, with their finder methods and such.
 
 == Usage
 

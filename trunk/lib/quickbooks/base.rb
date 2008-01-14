@@ -89,8 +89,8 @@ module Quickbooks
     class << self
 
       # Establishes a connection to the Quickbooks RDS Server for all Model Classes
-      def establish_connection(file='', user='', password='', application_name='RubyApplication', connection_type='localQBD', connection_mode='qbFileOpenDoNotCare')
-        @@connection = Connection.new(file, user, password, application_name, connection_type, connection_mode)
+      def establish_connection(application_name='RubyApplication', file='', user='', password='', connection_type='localQBD', connection_mode='DoNotCare')
+        @@connection = Connection.new(application_name, file, user, password, connection_type, connection_mode)
       end
 
       # Returns the current Connection

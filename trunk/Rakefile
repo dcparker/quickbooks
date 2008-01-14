@@ -57,6 +57,7 @@ spec = Gem::Specification.new do |s|
   s.author = "Chris Bruce & Daniel Parker"
   s.email = "gems@behindlogic.com"
   s.homepage = "http://quickbooks.rubyforge.org"
+  s.rubyforge_project = 'quickbooks'
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
@@ -74,5 +75,5 @@ end
 
 desc "Publish new documentation"
 task :publish => [:doc] do
-  `pscp -r doc/* rubyforge:/var/www/gforge-projects/quickbooks/`
+  `scp -r doc/* dcparker@rubyforge.org:/var/www/gforge-projects/quickbooks`
 end
