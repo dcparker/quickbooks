@@ -29,6 +29,8 @@ Without any configuration, you should be able to talk to Quickbooks immediately 
   c.last_name = 'Smith'
   c.save
 
+Again, until a later version, you will need to be running Quickbooks on the same computer _and have quickbooks open_ to the company file you need.
+
 == Authors
   
 * Chris Bruce (mailto:chrisabruce@yahoo.com)
