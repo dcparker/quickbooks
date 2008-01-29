@@ -6,7 +6,7 @@ require 'rake/gempackagetask'
 require 'rake/contrib/rubyforgepublisher'
 
 PKG_NAME = 'quickbooks'
-PKG_VERSION = "0.0.3"
+PKG_VERSION = "0.0.5"
 
 PKG_FILES = FileList[
     "lib/**/*", "rspec/**/*", "[A-Z]*", "Rakefile", "doc/**/*"
@@ -21,7 +21,7 @@ end
 # Make a console, useful when working on tests
 desc "Generate a test console"
 task :console do
-   verbose( false ) { sh "irb -I lib/ -r 'quickbooks'" }
+   verbose( false ) { sh "irb -I lib -r 'quickbooks'" }
 end
 
 # Genereate the RDoc documentation

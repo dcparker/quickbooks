@@ -30,7 +30,6 @@ module Quickbooks
         self << requests
       end
 
-# <!-- You may optionally have ListID OR FullName OR ( MaxReturned AND ActiveStatus AND FromModifiedDate AND ToModifiedDate AND ( NameFilter OR NameRangeFilter ) )  -->
       def to_xml
         pre = <<-thequickbooks_qbxmlrequestsetxml
 <?xml version="1.0" ?>
@@ -72,6 +71,7 @@ thequickbooks_qbxmlrequestsetxml
         @ret_elements = @options.delete(:only).to_a.only(@klass.properties).order!(@klass.properties).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
 
         # Includes only valid filters + aliases for valid filters, then transforms aliased filters to real filters, then camelizes keys to prepare for writing to XML, lastly orders the keys to a valid filter order.
+# You may optionally have ListID OR FullName OR ( MaxReturned AND ActiveStatus AND FromModifiedDate AND ToModifiedDate AND ( NameFilter OR NameRangeFilter ) )
         @filters = options.stringify_keys.only(@klass.valid_filters + @klass.filter_aliases.keys).transform_keys!(@klass.filter_aliases).camelize_keys!(Quickbooks::CAMELIZE_EXCEPTIONS).order!(@klass.camelized_valid_filters)
 
         # Complain if:
