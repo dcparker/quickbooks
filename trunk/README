@@ -2,7 +2,7 @@
 
 The purpose of this gem is to perform connectivity and communication with Quickbooks, providing the user with access to quickbooks data as everyday ruby objects. This could be understood to be somewhat like an ORM, but it is different in that its models are predefined by the Quickbooks API.
 
-In releases prior to 1.0, some knowledge of the Quickbooks API will be required. In releases beyond 1.0, the Quickbooks API should be fully hidden from your view.
+In releases prior to 1.0, some knowledge of the Quickbooks API may be required. In releases beyond 1.0, the Quickbooks API should be fully hidden from your view.
 
 Enjoy and PLEASE contribute either by suggestion or by submitting patches, etc. Or if development seems slow, please feel free to join! My work on this project has been solely for my own use of the gem, while opening up its achievements for others to use as well. Development may slow down considerably when I find it is at a stable and usable point for my needs. You've been warned! ;)
 
@@ -13,9 +13,8 @@ Enjoy and PLEASE contribute either by suggestion or by submitting patches, etc. 
 
 == Status
 
-This library is a work in progress and has limited capabilities right now. As of version 0.0.3, the Customer model is the only one proven
-to be in working condition, and that even with some bugs. It is stable in the capabilities that are defined, but there are some points
-where the usability needs improvement. I have attempted to make the Quickbooks family of models to work much like DataMapper models, with their finder methods and such.
+This library is a work in progress and has limited capabilities right now. As of version 0.0.5, the Customer model is the only model fleshed out and in working condition, and that even with some bugs. It is stable in the capabilities that are defined, but there are
+some points where the usability needs improvement. I have attempted to make the Quickbooks family of models to work much like DataMapper models, with their finder methods and such.
 
 == Usage
 
@@ -26,6 +25,8 @@ Simply include this gem in your project:
 Without any configuration, you should be able to talk to Quickbooks immediately if it and a company file is open on the same computer:
   c = Quickbooks::Customer.first
   c.phone = '(123) 456-7890'
+  c.first_name = 'Joey'
+  c.last_name = 'Smith'
   c.save
 
 == Authors
@@ -38,3 +39,4 @@ This library is released under the terms of the MIT License.
 == Changes
 
 * Initial import of a new rewrite at version 0.0.3
+* 0.0.5 includes support for ordered qbxml attributes, as well as better error-handling and smarter saving.

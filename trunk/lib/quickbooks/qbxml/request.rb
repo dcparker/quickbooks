@@ -30,6 +30,7 @@ module Quickbooks
         self << requests
       end
 
+# <!-- You may optionally have ListID OR FullName OR ( MaxReturned AND ActiveStatus AND FromModifiedDate AND ToModifiedDate AND ( NameFilter OR NameRangeFilter ) )  -->
       def to_xml
         pre = <<-thequickbooks_qbxmlrequestsetxml
 <?xml version="1.0" ?>
@@ -48,57 +49,95 @@ thequickbooks_qbxmlrequestsetxml
     end
 
     class Request
-      # @type = there are four types of queries...
-        # 1) List queries (:query)
-        # 2) Object-specific transaction query (:transaction)
-        # 3) Generic transaction query (:any_transaction)
-        # 4) Reports (:report)
-      # ...and then there are Mod requests...
-      # # 1) Mod request (:mod)
-      def initialize(object, type, options={})
+      # 1. List queries (:query)
+      #   Request.new(object, :query) # <= will return the record matching the object supplied (automatically searches by list_id or txn_id)
+      #   Request.new(Customer, :query, :limit => 1) # <= will return the first customer
+      #   Request.new(Customer, :query, /some match/) # <= will return all customers matching the regexp
+      # 2. Object-specific transaction query (:transaction)
+      #   Request.new(Transaction, :query) # <= will return the transaction matching the object supplied
+      # 3. Mod requests (:mod)
+      #   Request.new(object, :mod) # <= will update the object
+      # 4. Delete requests (:delete)
+      #   Request.new(object, :delete) # <= will delete the object
+      # We want the attributes of the object when we are updating, but no other time.
+      def initialize(object, type, options_or_regexp={})
+        options = options_or_regexp.is_a?(Regexp) ? {:matches => options_or_regexp} : options_or_regexp
         @type = type
         raise ArgumentError, "Quickbooks::Qbxml::Requests can only be of one of the following types: :query, :transaction, :any_transaction, :mod, :add, :delete, or :report" unless @type.is_one_of?(:query, :transaction, :any_transaction, :mod, :report, :add, :delete)
+        @klass = object.is_a?(Class) ? object : object.class
         @object = object
-        @filters = options if @type.is_one_of?(:query, :transaction, :any_transaction, :report)
-        @attributes = options.stringify_keys! if @type.is_one_of?(:mod, :add, :delete)
-        # puts self.inspect
+        @options = options
+
+        # Return only specific properties: Request.new(Customer, :query, :only => [:list_id, :full_name]); Quickbooks::Customer.first(:only => :list_id)
+        @ret_elements = @options.delete(:only).to_a.only(@klass.properties).order!(@klass.properties).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
+
+        # Includes only valid filters + aliases for valid filters, then transforms aliased filters to real filters, then camelizes keys to prepare for writing to XML, lastly orders the keys to a valid filter order.
+        @filters = options.stringify_keys.only(@klass.valid_filters + @klass.filter_aliases.keys).transform_keys!(@klass.filter_aliases).camelize_keys!(Quickbooks::CAMELIZE_EXCEPTIONS).order!(@klass.camelized_valid_filters)
+
+        # Complain if:
+        #   1) type is :mod or :delete, and object supplied is not a valid model
+        raise ArgumentError, "A Quickbooks record object must be supplied to perform an add, mod or del action" if @type.is_one_of?(:add, :mod, :delete) && !@object.is_a?(Quickbooks::Base)
       end
 
       def self.next_request_id
-        @request_id ||= 5000
+        @request_id ||= 0
         @request_id += 1
       end
 
-      # This is where the magic happens to convert a request object into xml worthy of sending off to quickbooks.
+      # This is where the magic happens to convert a request object into xml worthy of quickbooks.
       def to_xml(as_set=true)
         return (RequestSet.new(self)).to_xml if as_set # Simple call yields xml as a single request in a request set. However, if the xml for the lone request is required, pass false.
         req = Builder::XmlMarkup.new(:indent => 2)
-        case
+        request_root, container = case
         when @type.is_one_of?(:query)
-          request_root = "#{@object}QueryRq"
-          container = nil
-        when @type == :mod
-          request_root = "#{@object}ModRq"
-          container = "#{@object}Mod"
+          ["#{@klass.class_leaf_name}QueryRq", nil]
         when @type == :add
-          request_root = "#{@object}AddRq"
-          container = "#{@object}Add"
+          ["#{@klass.class_leaf_name}AddRq", "#{@klass.class_leaf_name}Add"]
+        when @type == :mod
+          ["#{@klass.class_leaf_name}ModRq", "#{@klass.class_leaf_name}Mod"]
         when @type == :delete
-          # request_root = "#{@object}DelRq"
-          request_root = Quickbooks::ListItem.child_types.include?(@object) ? 'ListDelRq' : 'TxnDelRq'
-          container = nil
-          # container = Quickbooks::ListItem.child_types.include?(@object) ? 'ListDelType' : 'TxnDelType'
-          @attributes.merge!((Quickbooks::ListItem.child_types.include?(@object) ? 'ListDelType' : 'TxnDelType') => @object)
+          ["#{@klass.ListOrTxn}DelRq", nil]
         else
           raise RuntimeError, "Could not convert this request to qbxml!\n#{self.inspect}"
         end
         inner_stuff = lambda {
-          ['ListDelType', 'TxnDelType', 'ListID', 'TxnID', 'EditSequence'].each do |key|
-            req.tag!(key, @attributes.delete(key)) if @attributes.has_key?(key)
-          end if @attributes
-          (@filters || @attributes).each do |key,value|
-            req.tag!(key, value)
+          deep_tag = lambda {|k,v|
+            if v.is_a?(Hash)
+              if k == ''
+                v.each { |k,v|
+                  deep_tag.call(k,v)
+                }
+              else
+                req.tag!(k.camelcase) { v.each { |k,v| deep_tag.call(k,v) } }
+              end
+            else
+              req.tag!(k.camelcase,uncast(v))
+            end
+          }
+
+          # Add the specific elements for the respective request type
+          if @type.is_one_of?(:add, :mod)
+            if @type == :mod
+              # First the ObjectId:
+              req.tag!(@klass.ListOrTxn + 'ID', @object.send("#{@klass.ListOrTxn}Id".underscore))
+              # Second the EditSequence
+              req.tag!('EditSequence', @object.send(:edit_sequence))
+            end
+            # Then, all the dirty_attributes
+            deep_tag.call('',@object.to_dirty_hash) # (this is an hash statically ordered to the model's qbxml attribute order)
+          elsif @type == :query && @object.class == @klass
+            # Sent an instance object for a query - we should include the ListId/TxnId (then other filters?)
+            req.tag!(@klass.ListOrTxn + 'ID', @object.send("#{@klass.ListOrTxn}Id".underscore))
+            deep_tag.call('', @filters)
+          elsif @type == :delete
+            req.tag!(@klass.ListOrTxn + 'DelType', @klass.class_leaf_name)
+            req.tag!(@klass.ListOrTxn + 'ID', @object.send("#{@klass.ListOrTxn}Id".underscore))
+          else
+            # just filters
+            deep_tag.call('', @filters)
           end
+          # Lastly, specify the fields to return, if desired
+          @ret_elements.each { |r| req.tag!('IncludeRetElement', r) } if !@ret_elements.blank?
         }
         req.tag!(request_root, :requestID => self.class.next_request_id) {
           if container
@@ -112,6 +151,16 @@ thequickbooks_qbxmlrequestsetxml
         # puts req.target!
         req.target!
       end
+
+      private
+        def uncast(v)
+          case
+          when v.is_a?(Time)
+            v.xmlschema
+          else
+            v
+          end
+        end
     end
 
     module RequestSetArrayExt

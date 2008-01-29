@@ -1,7 +1,8 @@
-# Contains Quickbooks::Base. Two models inherit directly from Quickbooks::Base: ListItem and Transaction.
-# All other models inherit from one of these.
+# Contains Quickbooks::Base, which inherits from Quickbooks::Model. Simple objects like BillAddress and CreditCardInfo also
+# inherit from Quickbooks::Model, but any whole-entity objects are below Quickbooks::Base in the inheritance tree. Two models
+# inherit directly from Quickbooks::Base: ListItem and Transaction. All other whole-entity models inherit from either of these.
 # 
-# Inheriting from ListItem:
+# Inherits from ListItem:
 # - Account
 # - Account List
 # - BillingRate
@@ -40,7 +41,7 @@
 # - Vehicle
 # - Vendor
 # - VendorType
-# Inheriting from Transaction:
+# Inherits from Transaction:
 # - Bill
 # - BillPaymentCheck
 # - BillPaymentCreditCard
@@ -68,11 +69,15 @@
 
 require 'activesupport'
 require 'quickbooks/connection'
-require 'quickbooks/qbxml/request'
-require 'quickbooks/qbxml/response'
+require 'quickbooks/model'
+require 'quickbooks/qbxml'
 
 module Quickbooks
-  class Base
+  # Base is just base for ListItem and Transaction. It inherits from Model, just as Ref does.
+  class Base < Model
+
+    self.filter_aliases = {:limit => :max_returned}
+
     # Stores a log of Quickbooks::Qbxml::Response objects that were a result of methods performed on this object.
     attr_accessor :response_log
     def response_log #:nodoc:
@@ -87,6 +92,10 @@ module Quickbooks
       "#<#{self.class.name}:#{self.object_id} #{instance_variables.reject {|i| i.is_one_of?('@response_log', '@original_values')}.map {|i| "#{i}=#{instance_variable_get(i).inspect}"}.join(' ')}>"
     end
     class << self
+
+      # def inherited(klass)
+      #   super
+      # end
 
       # Establishes a connection to the Quickbooks RDS Server for all Model Classes
       def establish_connection(application_name='RubyApplication', file='', user='', password='', connection_type='localQBD', connection_mode='DoNotCare')
@@ -108,40 +117,17 @@ module Quickbooks
         @connection = conn
       end
 
-      # Register a property in the current class. For example in the Customer class:
-      #   property :first_name
-      def property(*args)
-        raise ArgumentError, "must include a property name" unless args.length > 0
-        properties(*args)
-      end
-      # Register multiple properties at once. For example:
-      #   properties :first_name, :last_name, :phone, :alt_phone
-      def properties(*args)
-        if args.blank?
-          @properties || (@properties = [])
-        else
-          args.each do |property|
-            properties << property
-            attr_accessor property
-          end
-        end
-      end
-
       # Generates a request by sending *args to Quickbooks::Qbxml::Request.new, sends the request over the current connection,
       # and interprets the response using Quickbooks::Qbxml::ResponseSet.
       # The response is then instantiated into an object or an array of objects.
       # 
       # This method is used mostly internally, but it is the yoke of this library - use it to perform custom requests.
       def request_and_instantiate(obj_or_args,*args)
-        if obj_or_args.is_a?(Quickbooks::Base)
-          reinstantiate = obj_or_args
-        else
-          reinstantiate = nil
-          args.unshift(obj_or_args)
-        end
-
+        # If an object is sent, we need to reinstantiate the response into that object
+        reinstantiate = obj_or_args.is_a?(Quickbooks::Base) ? obj_or_args : nil
         objects = [] # This will hold and return the instantiated objects from the quickbooks response
-        self.request(*args).each { |response| objects << response.instantiate(reinstantiate) } # Does not instantiate if it's an error, but simply records response into response_log
+# The following is subject to bugginess, IF the response contains more than one object: it will instantiate only the last one.
+        self.request(obj_or_args, *args).each { |response| objects << response.instantiate(reinstantiate) } # Does not instantiate if it's an error, but simply records response into response_log
         objects.length == 1 ? objects[0] : objects
       end
 
@@ -165,7 +151,7 @@ module Quickbooks
         attrs.each do |key,value|
           if obj.respond_to?(key.to_s.underscore+'=')
             obj.send(key.to_s.underscore+'=', value)
-            obj.original_values[key.to_s.underscore] = value
+            obj.original_values[key.to_s.underscore] = obj.instance_variable_get('@' + key.to_s.underscore).dup
           end
         end if attrs
         obj # Will be either a nice object, or a Quickbooks::Qbxml::Error object.
@@ -173,13 +159,14 @@ module Quickbooks
 
       # Queries Quickbooks for all of the objects of the current class's type. For example, Quickbooks::Customer.all will return an array of Quickbooks::Customer objects representing all customers.
       def all(filters={})
-        [request_and_instantiate(self.class_leaf_name, :query, filters)].flatten
+        filters.reverse_merge!(:active_status => 'All')
+        [request_and_instantiate(self, :query, filters)].flatten
       end
 
       # Queries Quickbooks for the first object of the current class's type. For example, Quickbooks::Customer.first will return a Quickbooks::Customer object representing the first customer.
       def first(filters={})
-        filters.merge!(:MaxReturned => 1) unless filters.keys.include?(:ListID) || filters.keys.include?(:TxnID) || filters.keys.include?(:FullName)
-        request_and_instantiate(self.class_leaf_name, :query, filters)
+        (filters.merge!(:max_returned => 1) unless filters.keys.include?(:list_id) || filters.keys.include?(:txn_id) || filters.keys.include?(:full_name)) if filters.is_a?(Hash)
+        request_and_instantiate(self, :query, filters)
       end
 
       # Creates a new object of the current class's type. For example, Quickbooks::Customer.create(:name => 'Tommy') will create a customer object with a Name of Tommy.
@@ -188,53 +175,9 @@ module Quickbooks
       end
     end
 
-    # The default for all subclasses is simply to apply the attributes given, and mark the object as a new_record?
-    def initialize(args={})
-      self.attributes = args
+    def initialize(*args)
+      super # from Quickbooks::Model - sets the *args into attributes
       @new_record = true
-    end
-
-    # Returns a hash that represents all this object's attributes.
-    def attributes
-      attrs = {}
-      self.class.properties.each do |column|
-        attrs[column.to_s] = instance_variable_get('@' + column.to_s)
-      end
-      attrs
-    end
-    # Updates all attributes included in _attrs_ to the values given. The object will now be dirty?.
-    def attributes=(attrs)
-      raise ArgumentError, "attributes can only be set to a hash of attributes" unless attrs.is_a?(Hash)
-      attrs.each do |key,value|
-        if self.respond_to?(key.to_s.underscore+'=')
-          self.send(key.to_s.underscore+'=', value)
-        end
-      end
-    end
-
-    # Keeps track of the original values the object had when it was instantiated from a quickbooks response. dirty? and dirty_attributes compare the current values with these ones.
-    def original_values
-      @original_values || (@original_values = {})
-    end
-
-    # Returns true if any attributes have changed since the object was last loaded or updated from Quickbooks.
-    def dirty?
-      # Concept: For each column that the current model includes, has the value been changed?
-      self.class.properties.any? do |column|
-        self.instance_variable_get('@' + column.to_s) != original_values[column.to_s]
-      end
-    end
-
-    # Returns a hash of the attributes and their (new) values that have been changed since the object was last loaded or updated from Quickbooks.
-    def dirty_attributes
-      pairs = {}
-      self.class.properties.each do |column|
-        value = instance_variable_get('@' + column.to_s)
-        if value != original_values[column.to_s]
-          pairs[column.to_s] = value
-        end
-      end
-      pairs
     end
 
     # Returns true if the object is a new object (that doesn't represent an existing object in Quickbooks).
@@ -249,34 +192,50 @@ module Quickbooks
     # This way you can deal with the differences (conflicts), if you so desire, and simply call save again to commit your changes.
     def save
       return false unless dirty?
+      self.errors.clear # Clear out any errors: start with a clean slate!
       if new_record?
-        self.class.request_and_instantiate(self, self.class.class_leaf_name, :add, dirty_attributes.camelize_keys!)
-        @new_record = false if !dirty?
+        self.class.request_and_instantiate(self, :add)
+        ret = !dirty?
+        @new_record = false if ret
       else
         # Smart system that respects EditSequences and other people's changes.
         # 1) Try to save
         # 2) When we get a status of 3200, that means our EditSequence is not up to date
         # 3) Replace self's original_attributes with those just retrieved, and update the automatic attributes, like EditSequence and TimeModified
         # 4) Return false, return the object dirty but ready to save
-        old_originals = original_values.dup
-        self.class.request_and_instantiate(self, self.class.class_leaf_name, :mod, dirty_attributes.camelize_keys!.merge(:ListID => self.list_id, :EditSequence => self.edit_sequence))
-        # If save failed because of old record, but none of the fields conflict, re-save.
-        if dirty? && self.response_log.last.status == 3200
-          # puts "Now Dirty: #{dirty_attributes.keys.join(', ')}\nUpdated: #{old_originals.diff(original_values).keys.join(', ')}"
-          return self.save if dirty_attributes.keys.length == (dirty_attributes.keys - old_originals.diff(original_values).keys).length
+        old_originals = original_values.dup # Save the old_originals so we can detect any attributes that changed since we last loaded the object
+        ret = self.class.request_and_instantiate(self, :mod).error? ? false : true # Saves if possible, if EditSequence is out of date, it will read the up-to-date object into original_values
+        # If save failed (dirty?) because of old record (status 3200), but none of the fields conflict (attributes I've modified and are still different aren't the same attributes as any of the attributes someone else updated), then re-save!
+        if dirty? && self.response_log.last.status == 3200 && (dirty_attributes.only(dirty_attributes(old_originals).keys).keys - self.class.read_only.stringify_values).length == (dirty_attributes(old_originals).keys - old_originals.diff(original_values).keys - self.class.read_only.stringify_values).length
+          # 'Revert' fields I didn't modify to equal the values of the more up-to-date record just loaded.
+          # Fields I didn't modify: dirty_attributes - dirty_attributes(old_originals).keys
+          (dirty_attributes - dirty_attributes(old_originals).keys).each_key do |at|
+            self.send(at + '=', original_values[at]) if respond_to?(at + '=')
+          end
+          ret = self.save
         end
       end
-      !dirty?
+      # ret should be a false value if self has errors. Either way, ret gets the errors too.
+      ret.errors << self.errors if self.error?
+      # Should be true or false with an error attached.
+      ret
     end
 
     # Reloads the record from Quickbooks, discarding any changes that have been made to it.
     def reload
-      self.class.request_and_instantiate(self, self.class.class_leaf_name, :query, :ListID => self.list_id)
+      self.class.request_and_instantiate(self, :query)
     end
 
     # Destroys a record in Quickbooks. Note that even though Quickbooks will destroy the record, the record's ListID and DeletedTime can be accessed by doing a query for deleted objects of the appropriate type.
     def destroy
-      self.class.request_and_instantiate(self, self.class.class_leaf_name, :delete, self.is_a?(Quickbooks::ListItem) ? {:ListID => self.list_id} : {:TxnID => self.txn_id}).success?
+      self.class.request_and_instantiate(self, :delete).success?
+    end
+
+    # Usual comparison (super), but add in false if either is a new record.
+    def ==(other)
+      return false unless other.is_a?(self.class)
+      return false if self.new_record? || other.new_record?
+      super
     end
   end
 end

@@ -1,5 +1,4 @@
 require 'quickbooks/ruby_magic'
-require 'quickbooks/qbxml/error'
 
 module Quickbooks
   module Qbxml
@@ -99,7 +98,6 @@ module Quickbooks
             self.ret_items = hsh.dup
           elsif m = name.match(/^([A-Za-z][a-z]+)(Query|Mod|Add)Rs$/)
             self.response_type = m[1]
-            # self.ret_items = ResponseObject.new(self.response_type, hsh[self.response_type+'Ret'])
             self.ret_items = hsh[self.response_type+'Ret']
           else
             raise "Could not read this response:\n#{self.raw_response.inspect}"
@@ -131,39 +129,50 @@ module Quickbooks
         !success?
       end
 
-      def instantiate(obj=nil)
+      def instantiate(reinstantiate=nil)
         objs = []
         (self.ret_items.is_a?(Array) ? self.ret_items : [self.ret_items]).each do |ret_item|
+          obj = reinstantiate if reinstantiate
           if instantiatable?
             if self.status == 0
               if obj.nil?
-                obj = "Quickbooks::#{self.response_type}".constantize.instantiate(self.ret_items)
+                obj = "Quickbooks::#{self.response_type}".constantize.instantiate(ret_item)
               else
-                obj.class.instantiate(obj, self.ret_items)
+                obj.class.instantiate(obj, ret_item)
               end
             else
               # Instantiatable, but some error status. For any error status
               if obj.nil? # Must be a new object. Just as well, create a new object WITHOUT any original_attributes.
-                obj = "Quickbooks::#{self.response_type}".constantize.new(self.ret_items)
+                obj = "Quickbooks::#{self.response_type}".constantize.new(ret_item)
               else # An existing object. Must be an update or delete request. Update object's original_attributes.
                 updated = []
-                self.ret_items.each do |k,v|
+                ret_item.each do |k,v|
                   k = k.underscore
                   if obj.original_values[k] != v
                     updated << k
-                    obj.original_values[k] = v
+                    if obj.class.instance_variable_get('@object_properties').has_key?(k.to_sym)
+                      obj.original_values[k] = obj.class.instance_variable_get('@object_properties')[k.to_sym].new(v)
+                    else
+                      obj.original_values[k] = v
+                    end
                   end
                 end
-                ['EditSequence', 'TimeModified', 'TimeCreated'].each do |k|
-                  obj.send(k.underscore + '=', self.ret_items[k]) if self.ret_items.has_key?(k) && obj.respond_to?(k.underscore + '=')
+                # Update object's 'read-only' attributes (as well as in the original_values):
+                obj.class.read_only.stringify_values.camelize_values.each do |k|
+                  obj.send(k.underscore + '=', ret_item[k]) if ret_item.has_key?(k) && obj.respond_to?(k.underscore + '=')
                 end
                 self.message = self.message + " Other properties were out of date: [" + updated.join(', ') + '].'
               end
+              obj.errors << {:code => self.status, :message => self.message, :response => self}
             end
           else
-            obj = Quickbooks::Qbxml::Error.new(self) # If not instantiatable, use this 'Error' object just as a wrapper for the response_log to convey the error response.
+            if self.status == 0
+              obj.errors << {:code => nil, :message => "Cannot instantiate object of type #{self.response_type}!", :response => self}
+            else
+              obj.errors << {:code => self.status, :message => self.message, :response => self}
+            end
           end
-          obj.response_log << self
+          obj.response_log << self unless obj.nil?
           objs << obj
         end
         objs.length > 1 ? objs : objs[0] # Single or nil if not more than one.
