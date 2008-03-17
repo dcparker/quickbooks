@@ -46,10 +46,10 @@ end
 class Class
   # Returns the class name without the module names that precede it. I'm sure there's a builtin way to do this, but I couldn't find it and this works just as reliably!
   # Examples:
-  # - Quickbooks::Qbxml::Request.class_leaf_name # => 'Request'
+  # - Qbxml::Request.class_leaf_name # => 'Request'
   # - Quickbooks::Customer.class_leaf_name # => 'Customer'
   def class_leaf_name
-    self.name[self.parent.name.length+2,self.name.length-self.parent.name.length-2]
+    name.split('::')[-1]
   end
 end
 
@@ -61,6 +61,16 @@ class Hash
   def camelize_keys!(specials={})
     self.each_key do |k|
       self[specials.has_key?(k) ? specials[k] : k.camelize] = self.delete(k)
+    end
+    self
+  end
+
+  def stringify_keys(specials={})
+    self.dup.stringify_keys!(specials)
+  end
+  def stringify_keys!(specials={})
+    self.each_key do |k|
+      self[specials.has_key?(k) ? specials[k] : k.to_s] = self.delete(k)
     end
     self
   end
@@ -189,5 +199,14 @@ class Array
   end
   def order!(*ordered)
     self.replace(ordered.flatten!.only!(self))
+  end
+end
+
+class String
+  def underscore
+    gsub(/::/, '/').gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').gsub(/([a-z\d])([A-Z])/,'\1_\2').tr("-", "_").downcase
+  end
+  def camelize
+    gsub(/\/(.?)/) { "::" + $1.upcase }.gsub(/(^|_)(.)/) { $2.upcase }
   end
 end

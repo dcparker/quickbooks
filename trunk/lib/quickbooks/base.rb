@@ -67,10 +67,8 @@
 # - VehicleMileage
 # - VendorCredit
 
-require 'activesupport'
-require 'quickbooks/connection'
 require 'quickbooks/model'
-require 'quickbooks/qbxml'
+require 'qbxml'
 
 module Quickbooks
   # Base is just base for ListItem and Transaction. It inherits from Model, just as Ref does.
@@ -78,7 +76,7 @@ module Quickbooks
 
     self.filter_aliases = {:limit => :max_returned}
 
-    # Stores a log of Quickbooks::Qbxml::Response objects that were a result of methods performed on this object.
+    # Stores a log of Qbxml::Response objects that were a result of methods performed on this object.
     attr_accessor :response_log
     def response_log #:nodoc:
       @response_log || (@response_log = [])
@@ -93,13 +91,16 @@ module Quickbooks
     end
     class << self
 
-      # def inherited(klass)
-      #   super
-      # end
+      def use_adapter(adapter)
+        # Should complain if the adapter doesn't exist.
+        require "#{File.dirname(__FILE__)}/adapters/#{adapter.to_s}_adapter"
+        @@connection_adapter = Object.module_eval("::Quickbooks::#{adapter.to_s.camelize}Adapter::Connection", __FILE__, __LINE__)
+      end
 
       # Establishes a connection to the Quickbooks RDS Server for all Model Classes
-      def establish_connection(application_name='RubyApplication', file='', user='', password='', connection_type='localQBD', connection_mode='DoNotCare')
-        @@connection = Connection.new(application_name, file, user, password, connection_type, connection_mode)
+      def establish_connection(*args)
+        @@connection_adapter ||= use_adapter(:ole)
+        @@connection = @@connection_adapter.new(*args)
       end
 
       # Returns the current Connection
@@ -113,12 +114,12 @@ module Quickbooks
       # you can use this method to explicitly set the connection in a class that inherits from Quickbooks::Base.
       #   Quickbooks::Models::Base.connection = Quickbooks::Connection.new('My Test App', 'C:\\Some File.QBW', 'user', 'pass')
       def connection=(conn)
-        raise ArgumentError, "Cannot set connection to anything but a Quickbooks::Connection object" unless conn.is_a?(Quickbooks::Connection)
+        raise ArgumentError, "Cannot set connection to anything but a (*)Adapter::Connection object" unless conn.class.name =~ /Adapter::Connection$/
         @connection = conn
       end
 
-      # Generates a request by sending *args to Quickbooks::Qbxml::Request.new, sends the request over the current connection,
-      # and interprets the response using Quickbooks::Qbxml::ResponseSet.
+      # Generates a request by sending *args to Qbxml::Request.new, sends the request over the current connection,
+      # and interprets the response using Qbxml::ResponseSet.
       # The response is then instantiated into an object or an array of objects.
       # 
       # This method is used mostly internally, but it is the yoke of this library - use it to perform custom requests.
@@ -131,7 +132,7 @@ module Quickbooks
         objects.length == 1 ? objects[0] : objects
       end
 
-      # Generates a request using Quickbooks::Qbxml::Request, sends it, and returns a Quickbooks::Qbxml::ResponseSet object containing the response(s).
+      # Generates a request using Qbxml::Request, sends it, and returns a Qbxml::ResponseSet object containing the response(s).
       def request(*args)
         Qbxml::ResponseSet.new(
           self.connection.send_xml(
@@ -154,7 +155,7 @@ module Quickbooks
             obj.original_values[key.to_s.underscore] = obj.instance_variable_get('@' + key.to_s.underscore).dup
           end
         end if attrs
-        obj # Will be either a nice object, or a Quickbooks::Qbxml::Error object.
+        obj # Will be either a nice object, or a Qbxml::Error object.
       end
 
       # Queries Quickbooks for all of the objects of the current class's type. For example, Quickbooks::Customer.all will return an array of Quickbooks::Customer objects representing all customers.

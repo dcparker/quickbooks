@@ -36,7 +36,7 @@ module Quickbooks
       # For reference attributes (like parent_ref), use ParentRef - a class constant for that object.
       # _read_write_ will set the property setter and accessor accordingly.
       def read_write(*args)
-        if args.blank?
+        if args.empty?
           @read_write || (@read_write = [])
         else
           args.each do |prop|
@@ -55,7 +55,7 @@ module Quickbooks
 
       # Read-only attributes: These are attributes, but not modifiable in Quickbooks
       def read_only(*args)
-        if args.blank?
+        if args.empty?
           @read_only || (@read_only = [])
         else
           args.each do |prop|
