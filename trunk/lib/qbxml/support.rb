@@ -1,4 +1,6 @@
+gem 'formattedstring'
 gem 'builder'
+require 'quickbooks/structure'
 
 class Object
   # This allows one to effectively 'proxy' specific methods to be called on the return value of one of its methods.
@@ -25,6 +27,12 @@ class Object
   end
 end
 
+class Class
+  def lone_name
+    name.gsub(/.*::/, '')
+  end
+end
+
 class String
   def constantize
     Object.module_eval("::#{self}", __FILE__, __LINE__)
@@ -45,7 +53,7 @@ class Array
   end
   def camelize_values!(specials={})
     self.each_with_index do |v,i|
-      self[i] = specials.has_key?(v) ? specials[v] : (v.is_a?(Symbol) ? v.to_s.camelcase.to_sym : v.camelcase)
+      self[i] = specials.has_key?(v) ? specials[v] : (v.is_a?(Symbol) ? v.to_s.camelize.to_sym : v.camelize)
     end
     self
   end
@@ -116,31 +124,6 @@ class Hash
     raise ArgumentError, "transform_keys takes a single hash argument" unless trans_hash.is_a?(Hash)
     self.each_key do |k|
       self[trans_hash.has_key?(k) ? trans_hash[k] : k] = self.delete(k)
-    end
-    self
-  end
-
-  # Sets a static order for any group operations on the hash, specifically: keys, values, each, each_key, and each_value
-  def order!(*keys_in_order)
-    self.instance_variable_set('@keys_in_order', keys_in_order.flatten & self.keys) # (only the keys_in_order that are currently existing keys)
-    class << self
-      def keys
-        @keys_in_order
-      end
-      def values
-        self.keys.collect {|k| self[k]}
-      end
-      def each(&block)
-        self.keys.each do |k|
-          block.call(k, self[k])
-        end
-      end
-      def each_key(&block)
-        self.keys.each &block
-      end
-      def each_value(&block)
-        self.values.each &block
-      end
     end
     self
   end

@@ -64,13 +64,13 @@ module Quickbooks
         end
 
         at_exit do
-          Quickbooks::Connection.connections.each do |conn|
+          Connection.connections.each do |conn|
             conn.close
           end
         end
       end
 
-      # Initializes an instance of Quickbooks::Session.
+      # Initializes an instance of Quickbooks::Connection.
       # - _application_name_ is required.
       # - _file_ is optional, in which case the connection will be made to the currently open company file in the Quickbooks application.
       # - _user_ and _password_ may be required if you have specified a specific file to open.
@@ -109,7 +109,7 @@ module Quickbooks
         @connection || begin
           @connection = @quickbooks.ole
           @connection.OpenConnection2('',@application_name,@connection_type)
-          Quickbooks::Connection.connections << self
+          Connection.connections << self
           @connected = true
           @connection
         end

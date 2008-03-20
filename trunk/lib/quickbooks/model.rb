@@ -1,4 +1,5 @@
 require 'quickbooks/ruby_magic'
+require 'quickbooks/structure'
 module Quickbooks
   CAMELIZE_EXCEPTIONS = {'list_id' => 'ListID', 'txn_id' => 'TxnID', 'owner_id' => 'OwnerID'}
   # These were all created from the info in qbxmlops70.xml, found in the docs in the QBSDK package.
@@ -7,28 +8,34 @@ module Quickbooks
 
       def inherited(klass)
         def klass.valid_filters
-          superclass.valid_filters + (@valid_filters ||= [])
+          (superclass.valid_filters + (@valid_filters ||= [])).flatten_slashes
         end
         def klass.filter_aliases
-          superclass.filter_aliases.merge(@filter_aliases ||= {})
+          seed = [superclass.filter_aliases].flatten_slashes.expand_slashes.flatten_slashes
+          (seed.empty? ? {} : seed).merge(@filter_aliases ||= {})
         end
         klass.instance_variable_set('@object_properties', {})
       end
       
       def valid_filters=(v)
-        @valid_filters = v.stringify_values!
+        @valid_filters = v.stringify_values!.flatten_slashes
       end
       def valid_filters
-        @valid_filters ||= []
+        (@valid_filters ||= []).flatten_slashes
       end
       def filter_aliases=(v)
-        @filter_aliases = v.stringify_keys!.stringify_values!
+        al = [v].flatten_slashes.expand_slashes.flatten_slashes
+        @filter_aliases = al.empty? ? {} : al
       end
       def filter_aliases
         @filter_aliases ||= {}
       end
       def camelized_valid_filters
-        valid_filters.camelize_values(Quickbooks::CAMELIZE_EXCEPTIONS)
+        cvf = []
+        valid_filters.each do |v|
+          cvf << (Quickbooks::CAMELIZE_EXCEPTIONS.has_key?(v) ? Quickbooks::CAMELIZE_EXCEPTIONS[v] : (v.is_a?(Symbol) ? v.to_s.camelize.to_sym : v.split('/').map {|e| e.camelize}.join('/')))
+        end
+        cvf
       end
       
       # Register multiple read/writable properties at once. For example:
@@ -118,7 +125,7 @@ module Quickbooks
     # Returns a hash of the attributes and their (new) values that have been changed since the object was last loaded or updated from Quickbooks.
     # If you send in some attributes, it will compare to those given instead of original_attributes.
     def dirty_attributes(compare={})
-      compare = original_values if compare.blank?
+      compare = original_values if compare.empty?
       pairs = {}
       self.class.read_write.each do |column|
         value = instance_variable_get('@' + column.to_s)
@@ -134,12 +141,12 @@ module Quickbooks
       self.dirty_attributes.each do |key,value|
         if value.is_a?(Quickbooks::Model)
           h = value.to_dirty_hash
-          hsh[key] = h unless h.blank?
+          hsh[key] = h unless h.empty?
         else
           hsh[key] = value
         end
       end
-      hsh.order!(self.class.read_write.stringify_values)
+      hsh.ordered!(self.class.read_write.stringify_values)
       hsh
     end
 
@@ -148,12 +155,12 @@ module Quickbooks
       self.attributes(include_read_only).each do |key,value|
         if value.is_a?(Quickbooks::Model)
           h = value.to_hash(include_read_only)
-          hsh[key] = h unless h.blank?
+          hsh[key] = h unless h.empty?
         else
           hsh[key] = value
         end
       end
-      hsh.order!((include_read_only ? self.class.read_only + self.class.read_write : self.class.read_write).stringify_values)
+      hsh.ordered!((include_read_only ? self.class.read_only + self.class.read_write : self.class.read_write).stringify_values)
       hsh
     end
 

@@ -42,12 +42,14 @@ spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.description = s.summary = "A module to connect to QuickBooks through the QuickBooks SDK using WIN32OLE (other connection types to come)."
 
+  #### Dependencies.
+  s.add_dependency('formattedstring', '>= 0.0.1')
+  
   #### Which files are to be included in this gem?  Everything!  (Except CVS directories.)
   s.files = PKG_FILES
 
   #### Load-time details: library and application (you will need one or both).
   s.require_path = 'lib'
-  s.autorequire = 'quickbooks'
 
   #### Documentation and testing.
   s.has_rdoc = true

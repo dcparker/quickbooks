@@ -1,5 +1,4 @@
-require 'qbxml/support/core_ext'
-gem 'builder', '=2.1.2'
+require 'qbxml/support'
 require 'builder'
 
 module Qbxml
@@ -56,27 +55,62 @@ thequickbooks_qbxmlrequestsetxml
     #   Request.new(object, :query) # <= will return the record matching the object supplied (automatically searches by list_id or txn_id)
     #   Request.new(Customer, :query, :limit => 1) # <= will return the first customer
     #   Request.new(Customer, :query, /some match/) # <= will return all customers matching the regexp
-    # 2. Object-specific transaction query (:transaction)
+    # 2. Deleted queries (:deleted)
+    #   Request.new(object, :deleted) # <= INVALID!! (besides, you wouldn't have an object to check up on anyway :P )
+    #   Request.new(Customer, :deleted) # <= will return all deleted Customers
+    #   Request.new(Customer, :deleted, :deleted_date_range_filter => {'from_deleted_date' => Date.parse('2008/10/05')}) # <= will return all Customers deleted since 5 October 2008
+    # 3. Object-specific transaction query (:transaction)
     #   Request.new(Transaction, :query) # <= will return the transaction matching the object supplied
-    # 3. Mod requests (:mod)
+    # 4. Mod requests (:mod)
     #   Request.new(object, :mod) # <= will update the object
-    # 4. Delete requests (:delete)
+    # 5. Delete requests (:delete)
     #   Request.new(object, :delete) # <= will delete the object
     # We want the attributes of the object when we are updating, but no other time.
     def initialize(object, type, options_or_regexp={})
       options = options_or_regexp.is_a?(Regexp) ? {:matches => options_or_regexp} : options_or_regexp
       @type = type
-      raise ArgumentError, "Qbxml::Requests can only be of one of the following types: :query, :transaction, :any_transaction, :mod, :add, :delete, or :report" unless @type.is_one_of?(:query, :transaction, :any_transaction, :mod, :report, :add, :delete)
+      raise ArgumentError, "Qbxml::Requests can only be of one of the following types: :query, :transaction, :any_transaction, :mod, :add, :delete, :deleted, or :report" unless @type.is_one_of?(:query, :transaction, :any_transaction, :mod, :report, :add, :delete, :deleted)
       @klass = object.is_a?(Class) ? object : object.class
       @object = object
       @options = options
 
-      # Return only specific properties: Request.new(Customer, :query, :only => [:list_id, :full_name]); Quickbooks::Customer.first(:only => :list_id)
-      @ret_elements = @options.delete(:only).to_a.only(@klass.properties).order!(@klass.properties).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
+      # Transform the options received for :deleted requests.
+      # This way, Request.new(Customer, :deleted) == Request.new(ListDeleted, :list_del_type => 'Customer')
+      # and Request.new(Transaction, :deleted) == Request.new(TxnDeleted, :txn_del_type => 'Transaction')
+      if @type == :deleted
+        case @klass.ListOrTxn
+        when 'List'
+          @options[:list_del_type] = @klass.lone_name
+          @klass = Quickbooks::ListDeleted
+        when 'Txn'
+          @options[:txn_del_type] = @klass.lone_name
+          @klass = Quickbooks::TxnDeleted
+        end
+      end
 
-      # Includes only valid filters + aliases for valid filters, then transforms aliased filters to real filters, then camelizes keys to prepare for writing to XML, lastly orders the keys to a valid filter order.
-# You may optionally have ListID OR FullName OR ( MaxReturned AND ActiveStatus AND FromModifiedDate AND ToModifiedDate AND ( NameFilter OR NameRangeFilter ) )
-      @filters = options.stringify_keys.only(@klass.valid_filters + @klass.filter_aliases.keys).transform_keys!(@klass.filter_aliases).camelize_keys!(Quickbooks::CAMELIZE_EXCEPTIONS).order!(@klass.camelized_valid_filters)
+      # Return only specific properties: Request.new(Customer, :query, :only => [:list_id, :full_name]); Quickbooks::Customer.first(:only => :list_id)
+      @ret_elements = @options.delete(:only).to_a.only(@klass.properties).ordered!(@klass.properties).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
+
+      # Includes only valid filters + aliases for valid filters, # => {underscore/slashed keys + aliases}
+      # then transforms aliased filters to real filters, # => {underscore/slashed keys}
+      # then camelizes keys to prepare for writing to XML, # => {}
+      # lastly orders the keys to a valid filter order.
+      # Study the following:
+      #   @klass.filter_aliases = {'deleted_after' => 'deleted_date_range_filter/from_deleted_date'}
+      #   @klass.valid_filters = ['deleted_date_range_filter/from_deleted_date']
+      #   {:deleted_after => "2008-03-20T11:20:26-04:00"}.stringify_keys.flatten_slashes.
+      #     only(@klass.valid_filters + @klass.filter_aliases.expand_slashes.keys).
+      #     transform_keys!(@klass.filter_aliases.expand_slashes.inject({}) {|h,(k,v)| v = [v].flatten_slashes; h[k] = v.length < 2 ? v[0] : v; h}).
+      #     slash_camelize_keys!(Quickbooks::CAMELIZE_EXCEPTIONS).
+      #     ordered!(@klass.camelized_valid_filters).expand_slashes
+      #   # => {"DeletedDateRangeFilter" => {"FromDeletedDate" => "2008-03-20T11:20:26-04:00"}}
+      @filters = @options.delete(:filters) || @options.stringify_keys.flatten_slashes.
+        only(@klass.valid_filters + @klass.filter_aliases.expand_slashes.keys).
+        transform_keys!(@klass.filter_aliases.expand_slashes.inject({}) {|h,(k,v)| v = [v].flatten_slashes; h[k] = v.length < 2 ? v[0] : v; h}).
+        slash_camelize_keys!(Quickbooks::CAMELIZE_EXCEPTIONS).
+        ordered!(@klass.camelized_valid_filters).expand_slashes
+      @filters = @filters.to_hash unless @filters.is_a?(Hash)
+      @filters = @filters['FILTERS'] if @filters.keys == ['FILTERS'] # So if you include an xml-formatted string of filters, you can simply wrap them in <FILTERS></FILTERS> as a root key
 
       # Complain if:
       #   1) type is :mod or :delete, and object supplied is not a valid model
@@ -101,6 +135,8 @@ thequickbooks_qbxmlrequestsetxml
         ["#{@klass.class_leaf_name}ModRq", "#{@klass.class_leaf_name}Mod"]
       when @type == :delete
         ["#{@klass.ListOrTxn}DelRq", nil]
+      when @type == :deleted
+        ["#{@klass.ListOrTxn}DeletedQueryRq", nil]
       else
         raise RuntimeError, "Could not convert this request to qbxml!\n#{self.inspect}"
       end
@@ -141,7 +177,7 @@ thequickbooks_qbxmlrequestsetxml
           deep_tag.call('', @filters)
         end
         # Lastly, specify the fields to return, if desired
-        @ret_elements.each { |r| req.tag!('IncludeRetElement', r) } if !@ret_elements.blank?
+        @ret_elements.each { |r| req.tag!('IncludeRetElement', r) } if @ret_elements.is_a?(Array) && @ret_elements.length > 0
       }
       req.tag!(request_root, :requestID => self.class.next_request_id) {
         if container
@@ -158,7 +194,12 @@ thequickbooks_qbxmlrequestsetxml
 
     private
       def uncast(v)
-        v.is_a?(Time) ? v.xmlschema : v
+        case
+        when v.respond_to?(:xmlschema)
+          v.xmlschema
+        else
+          v
+        end
       end
   end
 end

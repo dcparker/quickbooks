@@ -123,12 +123,19 @@ module Quickbooks
       # The response is then instantiated into an object or an array of objects.
       # 
       # This method is used mostly internally, but it is the yoke of this library - use it to perform custom requests.
-      def request_and_instantiate(obj_or_args,*args)
+      def query(obj_or_args,*args)
         # If an object is sent, we need to reinstantiate the response into that object
-        reinstantiate = obj_or_args.is_a?(Quickbooks::Base) ? obj_or_args : nil
+        reinstantiate = if obj_or_args.is_a?(Quickbooks::Base)
+          obj_or_args
+        elsif obj_or_args.is_a?(Class)
+          nil
+        else
+          args.unshift(obj_or_args)
+          nil
+        end
         objects = [] # This will hold and return the instantiated objects from the quickbooks response
 # The following is subject to bugginess, IF the response contains more than one object: it will instantiate only the last one.
-        self.request(obj_or_args, *args).each { |response| objects << response.instantiate(reinstantiate) } # Does not instantiate if it's an error, but simply records response into response_log
+        self.request(reinstantiate || self, *args).each { |response| objects << response.instantiate(reinstantiate) } # Does not instantiate if it's an error, but simply records response into response_log
         objects.length == 1 ? objects[0] : objects
       end
 
@@ -161,13 +168,13 @@ module Quickbooks
       # Queries Quickbooks for all of the objects of the current class's type. For example, Quickbooks::Customer.all will return an array of Quickbooks::Customer objects representing all customers.
       def all(filters={})
         filters.reverse_merge!(:active_status => 'All')
-        [request_and_instantiate(self, :query, filters)].flatten
+        [query(self, :query, filters)].flatten
       end
 
       # Queries Quickbooks for the first object of the current class's type. For example, Quickbooks::Customer.first will return a Quickbooks::Customer object representing the first customer.
       def first(filters={})
         (filters.merge!(:max_returned => 1) unless filters.keys.include?(:list_id) || filters.keys.include?(:txn_id) || filters.keys.include?(:full_name)) if filters.is_a?(Hash)
-        request_and_instantiate(self, :query, filters)
+        query(self, :query, filters)
       end
 
       # Creates a new object of the current class's type. For example, Quickbooks::Customer.create(:name => 'Tommy') will create a customer object with a Name of Tommy.
@@ -195,7 +202,7 @@ module Quickbooks
       return false unless dirty?
       self.errors.clear # Clear out any errors: start with a clean slate!
       if new_record?
-        self.class.request_and_instantiate(self, :add)
+        self.class.query(self, :add)
         ret = !dirty?
         @new_record = false if ret
       else
@@ -205,7 +212,7 @@ module Quickbooks
         # 3) Replace self's original_attributes with those just retrieved, and update the automatic attributes, like EditSequence and TimeModified
         # 4) Return false, return the object dirty but ready to save
         old_originals = original_values.dup # Save the old_originals so we can detect any attributes that changed since we last loaded the object
-        ret = self.class.request_and_instantiate(self, :mod).error? ? false : true # Saves if possible, if EditSequence is out of date, it will read the up-to-date object into original_values
+        ret = self.class.query(self, :mod).error? ? false : true # Saves if possible, if EditSequence is out of date, it will read the up-to-date object into original_values
         # If save failed (dirty?) because of old record (status 3200), but none of the fields conflict (attributes I've modified and are still different aren't the same attributes as any of the attributes someone else updated), then re-save!
         if dirty? && self.response_log.last.status == 3200 && (dirty_attributes.only(dirty_attributes(old_originals).keys).keys - self.class.read_only.stringify_values).length == (dirty_attributes(old_originals).keys - old_originals.diff(original_values).keys - self.class.read_only.stringify_values).length
           # 'Revert' fields I didn't modify to equal the values of the more up-to-date record just loaded.
@@ -224,12 +231,13 @@ module Quickbooks
 
     # Reloads the record from Quickbooks, discarding any changes that have been made to it.
     def reload
-      self.class.request_and_instantiate(self, :query)
+      self.class.query(self, :query)
     end
 
-    # Destroys a record in Quickbooks. Note that even though Quickbooks will destroy the record, the record's ListID and DeletedTime can be accessed by doing a query for deleted objects of the appropriate type.
+    # Destroys a record in Quickbooks. Note that even though Quickbooks will destroy the record,
+    # the record's ListID and DeletedTime can be accessed by doing a query for deleted objects of the appropriate type.
     def destroy
-      self.class.request_and_instantiate(self, :delete).success?
+      self.class.query(self, :delete).success?
     end
 
     # Usual comparison (super), but add in false if either is a new record.

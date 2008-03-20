@@ -1,5 +1,4 @@
-require 'qbxml/support/core_ext'
-gem 'formattedstring'
+require 'qbxml/support'
 require 'formatted_string'
 
 module Qbxml
@@ -39,6 +38,8 @@ module Qbxml
     end
 
     def append_from_xml(xml)
+      # puts "ResponseXML:"
+      # puts xml
       self.append_from_hash(xml.formatted(:xml).to_hash)
     end
     def append_from_hash(hsh)
@@ -95,12 +96,23 @@ module Qbxml
       self.severity = hsh['statusSeverity']
       self.message = hsh['statusMessage']
       # if self.status == 0 # Status is good, proceed with eating the request.
+      # <ListDeletedQueryRs requestID="5" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+      #   <ListDeletedRet>
+      #     <ListDelType>Customer</ListDelType>
+      #     <ListID>80000030-1203622308</ListID>
+      #     <TimeCreated>2008-02-21T14:31:48-05:00</TimeCreated>
+      #     <TimeDeleted>2008-03-18T17:31:12-05:00</TimeDeleted>
+      #     <FullName>Rachel Parker</FullName>
+      #   </ListDeletedRet>
+      # </ListDeletedQueryRs>
         if m = name.match(/^(List|Txn)Del(etedQuery)?Rs$/)
           # (List|Txn)DelRs, or (List|Txn)DeletedQueryRs - both return just a few attributes, like ListID / TxnID and TimeDeleted
-          self.response_type = hsh.delete(m[1]+'DelType')
-          # self.ret_items = ResponseObject.new(self.response_type, hsh.dup)
-          self.ret_items = hsh.dup
-        elsif m = name.match(/^([A-Za-z][a-z]+)(Query|Mod|Add)Rs$/)
+          list_or_txn = m[1]
+          long_name = m[1]+'Del'+m[2].to_s
+          ret_key = long_name.gsub(/Query$/,'')+'Ret'
+          self.ret_items = hsh[ret_key].is_a?(Array) ? hsh[ret_key] : [hsh[ret_key]].compact # Force to be an array - it's return items!
+          self.response_type = self.ret_items.empty? ? m[1] : self.ret_items[0][list_or_txn+'DelType']
+        elsif m = name.match(/^((?:[A-Za-z][a-z]+)+)(Query|Mod|Add)Rs$/)
           self.response_type = m[1]
           self.ret_items = hsh[self.response_type+'Ret']
         else

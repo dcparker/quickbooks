@@ -4,7 +4,7 @@ require 'quickbooks/models/customer/credit_card_info'
 
 module Quickbooks
   class Customer < ListItem
-    self.valid_filters = [:active_status, :from_modified_date, :to_modified_date, :name_filter, :name_range_filter, :total_balance_filter]
+    self.valid_filters = ['active_status', 'from_modified_date', 'to_modified_date', 'name_filter', 'name_range_filter', 'total_balance_filter']
 
     # Properties are in the order required by QBXML
     read_write  :name,

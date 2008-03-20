@@ -1,5 +1,7 @@
 # This file contains several little tidbits of magic that I've made to make certain things easier.
 # See Object, Class, and Hash.
+require 'time'
+require 'date'
 
 class Object
   # This allows one to effectively 'proxy' specific methods to be called on the return value of one of its methods.
@@ -39,7 +41,7 @@ class Object
     @errors ||= []
   end
   def error?
-    !@errors.blank?
+    !@errors.empty?
   end
 end
 
@@ -126,29 +128,11 @@ class Hash
     self
   end
 
-  # Sets a static order for any group operations on the hash, specifically: keys, values, each, each_key, and each_value
-  def order!(*keys_in_order)
-    self.instance_variable_set('@keys_in_order', keys_in_order.flatten & self.keys) # (only the keys_in_order that are currently existing keys)
-    class << self
-      def keys
-        @keys_in_order
-      end
-      def values
-        self.keys.collect {|k| self[k]}
-      end
-      def each(&block)
-        self.keys.each do |k|
-          block.call(k, self[k])
-        end
-      end
-      def each_key(&block)
-        self.keys.each &block
-      end
-      def each_value(&block)
-        self.values.each &block
-      end
-    end
-    self
+  def reverse_merge(hsh)
+    hsh.dup.merge(self)
+  end
+  def reverse_merge!(hsh)
+    self.replace(hsh.merge(self))
   end
 
   def transform_keys(trans_hash)
@@ -179,7 +163,7 @@ class Array
     values.flatten!
     i = 0
     while i <= length-1 do
-      self[i].is_one_of?(values) ? i += 1 : self.slice!(i)
+      (self[i].is_one_of?(values) || collect[i].is_one_of?(values)) ? i += 1 : self.slice!(i)
     end
     self
   end
@@ -189,7 +173,7 @@ class Array
   end
   def camelize_values!(specials={})
     self.each_with_index do |v,i|
-      self[i] = specials.has_key?(v) ? specials[v] : (v.is_a?(Symbol) ? v.to_s.camelcase.to_sym : v.camelcase)
+      self[i] = specials.has_key?(v) ? specials[v] : (v.is_a?(Symbol) ? v.to_s.camelize.to_sym : v.camelize)
     end
     self
   end
