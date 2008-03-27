@@ -1,6 +1,6 @@
 gem 'formattedstring'
 gem 'builder'
-require 'quickbooks/structure'
+gem 'hash_magic'
 
 class Object
   # This allows one to effectively 'proxy' specific methods to be called on the return value of one of its methods.

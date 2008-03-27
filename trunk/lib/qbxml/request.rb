@@ -1,5 +1,6 @@
 require 'qbxml/support'
 require 'builder'
+require 'hash_magic'
 
 module Qbxml
   VERSION = '6.0'
@@ -89,26 +90,27 @@ thequickbooks_qbxmlrequestsetxml
       end
 
       # Return only specific properties: Request.new(Customer, :query, :only => [:list_id, :full_name]); Quickbooks::Customer.first(:only => :list_id)
-      @ret_elements = @options.delete(:only).to_a.only(@klass.properties).ordered!(@klass.properties).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
+      @ret_elements = @options.delete(:only).to_a.only(@klass.properties).ordered(@klass.properties).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
 
       # Includes only valid filters + aliases for valid filters, # => {underscore/slashed keys + aliases}
       # then transforms aliased filters to real filters, # => {underscore/slashed keys}
       # then camelizes keys to prepare for writing to XML, # => {}
       # lastly orders the keys to a valid filter order.
+
       # Study the following:
       #   @klass.filter_aliases = {'deleted_after' => 'deleted_date_range_filter/from_deleted_date'}
       #   @klass.valid_filters = ['deleted_date_range_filter/from_deleted_date']
-      #   {:deleted_after => "2008-03-20T11:20:26-04:00"}.stringify_keys.flatten_slashes.
-      #     only(@klass.valid_filters + @klass.filter_aliases.expand_slashes.keys).
-      #     transform_keys!(@klass.filter_aliases.expand_slashes.inject({}) {|h,(k,v)| v = [v].flatten_slashes; h[k] = v.length < 2 ? v[0] : v; h}).
-      #     slash_camelize_keys!(Quickbooks::CAMELIZE_EXCEPTIONS).
-      #     ordered!(@klass.camelized_valid_filters).expand_slashes
+      #   {:deleted_after => "2008-03-20T11:20:26-04:00"}.slashed.
+      #     only(@klass.valid_filters + @klass.filter_aliases.slashed.flat.keys).
+      #     transform_keys!(@klass.filter_aliases.slashed.flat).
+      #     slash_camelize_keys!(Quickbooks::CAMELIZE_EXCEPTIONS).slashed.
+      #     ordered!(@klass.camelized_valid_filters).slashed.expand
       #   # => {"DeletedDateRangeFilter" => {"FromDeletedDate" => "2008-03-20T11:20:26-04:00"}}
-      @filters = @options.delete(:filters) || @options.stringify_keys.flatten_slashes.
-        only(@klass.valid_filters + @klass.filter_aliases.expand_slashes.keys).
-        transform_keys!(@klass.filter_aliases.expand_slashes.inject({}) {|h,(k,v)| v = [v].flatten_slashes; h[k] = v.length < 2 ? v[0] : v; h}).
+      @filters = @options.delete(:filters) || @options.slashed.
+        only(@klass.valid_filters + @klass.filter_aliases.slashed.flat.keys).
+        transform_keys!(@klass.filter_aliases.slashed.flat).
         slash_camelize_keys!(Quickbooks::CAMELIZE_EXCEPTIONS).
-        ordered!(@klass.camelized_valid_filters).expand_slashes
+        ordered!(@klass.camelized_valid_filters)
       @filters = @filters.to_hash unless @filters.is_a?(Hash)
       @filters = @filters['FILTERS'] if @filters.keys == ['FILTERS'] # So if you include an xml-formatted string of filters, you can simply wrap them in <FILTERS></FILTERS> as a root key
 

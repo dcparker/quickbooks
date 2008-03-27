@@ -1,6 +1,6 @@
 class Quickbooks::Transaction < Quickbooks::Base
 
-  self.valid_filters = [:txn_id]
+  self.valid_filters = ['txn_id']
 
   def self.inherited(klass)
     super

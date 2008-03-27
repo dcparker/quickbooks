@@ -237,7 +237,7 @@ module Quickbooks
     # Destroys a record in Quickbooks. Note that even though Quickbooks will destroy the record,
     # the record's ListID and DeletedTime can be accessed by doing a query for deleted objects of the appropriate type.
     def destroy
-      self.class.query(self, :delete).success?
+      self.class.query(self, :delete).nil?
     end
 
     # Usual comparison (super), but add in false if either is a new record.

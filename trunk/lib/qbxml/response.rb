@@ -191,7 +191,7 @@ module Qbxml
         obj.response_log << self unless obj.nil?
         objs << obj
       end
-      objs.length > 1 ? objs : objs[0] # Single or nil if not more than one.
+      objs.length > 1 ? objs : objs[0] # Single (fallback nil) if not more than one.
     end
   end
 end

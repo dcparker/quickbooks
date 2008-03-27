@@ -214,15 +214,13 @@ describe Qbxml::Request do
   # None of the above tests care about the order of attributes yet.
   it "should be able to order a multi-level hash based on a flat array with slash/separated/heirarchy" do
     map = ['first', 'second/into', 'second/after', 'second/last', 'third', 'fourth', 'fifth/another', 'fifth/nice', 'fifth/day']
-# puts "Second: #{map.step_into_slash(:second).inspect}"
-    hsh_a = {'second' => {'into' => 'the box', 'last' => 'time'}, 'fourth' => 'night', 'fifth' => {'another' => 'time', 'nice' => 'clothes'}}
-    hsh_b = {'first' => 'man', 'second' => {'after' => 'the first', 'last' => 'forever'}, 'third' => 'day', 'fifth' => {'another' => 'a', 'day' => 'night'}}
-    hsh_a.slash_structure_ordered!(map)
-# puts hsh_a.instance_variable_get(:@keys_in_order).inspect
+    hsh_a = {'second' => {'into' => 'the box', 'last' => 'time'}, 'fourth' => 'night', 'fifth' => {'another' => 'time', 'nice' => 'clothes'}}.slashed
+    hsh_b = {'first' => 'man', 'second' => {'after' => 'the first', 'last' => 'forever'}, 'third' => 'day', 'fifth' => {'another' => 'a', 'day' => 'night'}}.slashed
+    hsh_a.ordered!(map)
     hsh_a.keys.should == ['second', 'fourth', 'fifth']
     hsh_a['second'].keys.should == ['into', 'last']
     hsh_a['fifth'].keys.should == ['another', 'nice']
-    hsh_b.slash_structure_ordered!(map)
+    hsh_b.ordered!(map)
     hsh_b.keys.should == ['first', 'second', 'third', 'fifth']
     hsh_b['second'].keys.should == ['after', 'last']
     hsh_b['fifth'].keys.should == ['another', 'day']

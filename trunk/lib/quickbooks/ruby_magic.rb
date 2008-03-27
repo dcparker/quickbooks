@@ -1,5 +1,8 @@
 # This file contains several little tidbits of magic that I've made to make certain things easier.
 # See Object, Class, and Hash.
+gem 'hash_magic'
+require 'hash_magic'
+
 require 'time'
 require 'date'
 
@@ -67,6 +70,16 @@ class Hash
     self
   end
 
+  def slash_camelize_keys!(specials={})
+    cam = slashed.flat
+    cam.each_key do |k|
+      cam[
+        specials.has_key?(k) ? specials[k] : (k.is_a?(Symbol) ? k.to_s.camelize.to_sym : (k+' ').split('/').map {|e| e.camelize}.join('/')[0..-2])
+      ] = cam.delete(k)
+    end
+    cam.slashed
+  end
+
   def stringify_keys(specials={})
     self.dup.stringify_keys!(specials)
   end
@@ -120,28 +133,32 @@ class Hash
   end
 
   def only(*keys)
-    self.dup.only!(*keys)
+    keys.flatten.inject(dup.clear) {|h,(k,v)| h[k] = self[k]}
   end
   def only!(*keys)
-    keys = keys.flatten
-    self.keys.each { |k| self.delete(k) unless keys.include?(k) }
-    self
+    replace(only(*keys))
   end
 
   def reverse_merge(hsh)
     hsh.dup.merge(self)
   end
   def reverse_merge!(hsh)
-    self.replace(hsh.merge(self))
+    replace(hsh.merge(self))
   end
 
-  def transform_keys(trans_hash)
-    self.dup.transform_keys!(trans_hash)
+  def transform_keys(trans_hash,&block)
+    dup.transform_keys!(trans_hash)
   end
-  def transform_keys!(trans_hash)
-    raise ArgumentError, "transform_keys takes a single hash argument" unless trans_hash.is_a?(Hash)
-    self.each_key do |k|
-      self[trans_hash.has_key?(k) ? trans_hash[k] : k] = self.delete(k)
+  def transform_keys!(trans_hash,&block)
+    raise ArgumentError, "transform_keys takes a single hash argument or a block" unless trans_hash.is_a?(Hash) || block_given?
+    if block_given?
+      each do |k,v|
+        block.call(h,k,v)
+      end
+    else
+      trans_hash.each do |k,v|
+        self[v] = self.delete(k) if self.has_key?(k)
+      end
     end
     self
   end
