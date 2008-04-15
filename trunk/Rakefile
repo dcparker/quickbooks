@@ -6,7 +6,7 @@ require 'rake/gempackagetask'
 require 'rake/contrib/rubyforgepublisher'
 
 PKG_NAME = 'quickbooks'
-PKG_VERSION = "0.0.7"
+PKG_VERSION = "0.1.0"
 
 PKG_FILES = FileList[
     "lib/**/*", "rspec/**/*", "[A-Z]*", "Rakefile", "doc/**/*"
@@ -43,7 +43,8 @@ spec = Gem::Specification.new do |s|
   s.description = s.summary = "A module to connect to QuickBooks through the QuickBooks SDK using WIN32OLE (other connection types to come)."
 
   #### Dependencies.
-  s.add_dependency('formattedstring', '>= 0.0.1')
+  s.add_dependency('formattedstring', '>= 0.1.0')
+  s.add_dependency('hash_magic', '>= 0.1.0')
   
   #### Which files are to be included in this gem?  Everything!  (Except CVS directories.)
   s.files = PKG_FILES
@@ -56,7 +57,7 @@ spec = Gem::Specification.new do |s|
   s.extra_rdoc_files = ["README", "LICENSE"]
 
   #### Author and project details.
-  s.author = "Chris Bruce & Daniel Parker"
+  s.author = "Daniel Parker"
   s.email = "gems@behindlogic.com"
   s.homepage = "http://quickbooks.rubyforge.org"
   s.rubyforge_project = 'quickbooks'

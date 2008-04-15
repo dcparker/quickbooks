@@ -1,4 +1,5 @@
 module Quickbooks
+  # A reference simply is a link to another object. These are mostly included in other models as attributes.
   class Ref < Model
     def self.inherited(klass)
       klass.read_only :list_id, :full_name

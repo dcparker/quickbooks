@@ -1,6 +1,10 @@
 # Contains Quickbooks::Base, which inherits from Quickbooks::Model. Simple objects like BillAddress and CreditCardInfo also
-# inherit from Quickbooks::Model, but any whole-entity objects are below Quickbooks::Base in the inheritance tree. Two models
-# inherit directly from Quickbooks::Base: ListItem and Transaction. All other whole-entity models inherit from either of these.
+# inherit from Quickbooks::Model, but any objects that are stored as their own 'entity' are below Quickbooks::Base in the
+# inheritance tree. Two models inherit directly from Quickbooks::Base: ListItem and Transaction. All other whole-entity
+# models inherit from either of these. Only a couple are written so far, as I've had use for them. They're pretty easy to
+# write though -- take a look at customer.rb, for example: all that needs defining for most models is any filters (and aliases)
+# specific to that model, and a listing of that model's attributes. If you write a model, please send in your code to
+# gems@behindlogic.com!
 # 
 # Inherits from ListItem:
 # - Account
@@ -72,6 +76,22 @@ require 'qbxml'
 
 module Quickbooks
   # Base is just base for ListItem and Transaction. It inherits from Model, just as Ref does.
+  # 
+  # Some Qbxml specifications require certain finder-options to be placed inside a containing entity, such as:
+  #   ...
+  #   <DeletedDateRangeFilter>
+  #     <FromDeletedDate>#{(Time.now - 5*60*60).xmlschema}</FromDeletedDate>
+  #     <ToDeletedDate>#{(Time.now - 3*60*60).xmlschema}</ToDeletedDate>
+  #   </DeletedDateRangeFilter>
+  #   ...
+  # The Quickbooks Models define aliases to these "inside" options. The equivalent to the above [partial] request:
+  #   Quickbooks::Deleted.all(:deleted_after => (Time.now - 5*60*60).xmlschema, :deleted_before => (Time.now - 3*60*60).xmlschema)
+  # (Type-casting hasn't made it in yet.)
+  # 
+  # Qbxml makes a special allowance for Deleted items. Much of the time, we'd rather access a model's deleted items through that
+  # model class instead of through the deleted class. So Qbxml allows any class to ask for its deleted items through a call like
+  # this:
+  #   Quickbooks::Customer.deleted(:deleted_after => Time.now - 3*60*60)
   class Base < Model
 
     self.filter_aliases = {:limit => :max_returned}
@@ -177,12 +197,19 @@ module Quickbooks
         query(self, :query, filters)
       end
 
+      # Still in testing... these should be equivalent:
+      #   Quickbooks::Customer.deleted(:deleted_before => Time.now) == Quickbooks::Deleted.all(:type => 'Customer', :deleted_before => Time.now)
+      def deleted(filters={})
+        query(self, :deleted, filters)
+      end
+
       # Creates a new object of the current class's type. For example, Quickbooks::Customer.create(:name => 'Tommy') will create a customer object with a Name of Tommy.
       def create(*args)
         new(*args).save
       end
     end
 
+    # Generates a new object that can be saved into Quickbooks once the required attributes are set.
     def initialize(*args)
       super # from Quickbooks::Model - sets the *args into attributes
       @new_record = true

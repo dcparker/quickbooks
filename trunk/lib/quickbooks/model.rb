@@ -1,8 +1,9 @@
 require 'quickbooks/ruby_magic'
 
 module Quickbooks
-  CAMELIZE_EXCEPTIONS = {'list_id' => 'ListID', 'txn_id' => 'TxnID', 'owner_id' => 'OwnerID'}
   # These were all created from the info in qbxmlops70.xml, found in the docs in the QBSDK package.
+  CAMELIZE_EXCEPTIONS = {'list_id' => 'ListID', 'txn_id' => 'TxnID', 'owner_id' => 'OwnerID'}
+
   class Model
     class << self
 
