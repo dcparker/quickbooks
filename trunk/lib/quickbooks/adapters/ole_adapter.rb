@@ -98,7 +98,7 @@ module Quickbooks
 
       # Sends a request to Quickbooks. This request should be a valid QBXML request. Use Qbxml::Request to generate valid requests.
       def send_xml(xml)
-        @quickbooks.ProcessRequest(session, xml)
+        connection.ProcessRequest(session, xml)
       rescue => e
         warn "ERROR processing request:\n#{xml}"
         raise # Reraises the original error, only this way we got the xml output
@@ -136,10 +136,10 @@ module Quickbooks
       # Close the connection to Quickbooks. Automatically ends the session, if there is one.
       def close
         end_session
-        if connected? && connection.CloseConnection
+        if connected? && connection.CloseConnection.nil?
           @connected = false
           @connection = nil
-          Quickbooks::Connection.connections = Quickbooks::Connection.connections - [self]
+          Connection.connections = Connection.connections - [self]
         end
         return !@connected # Returns false if CloseConnection failed.
       end
