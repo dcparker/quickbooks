@@ -65,7 +65,7 @@ module Quickbooks
 
         at_exit do
           Connection.connections.each do |conn|
-            conn.close
+            conn.close rescue nil
           end
         end
       end
@@ -100,7 +100,7 @@ module Quickbooks
       def send_xml(xml)
         connection.ProcessRequest(session, xml)
       rescue => e
-        warn "ERROR processing request:\n#{xml}"
+        puts "ERROR processing request:\n#{xml}"
         raise # Reraises the original error, only this way we got the xml output
       end
 

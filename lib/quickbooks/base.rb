@@ -138,6 +138,10 @@ module Quickbooks
         @connection = conn
       end
 
+      def connected?
+        @connection.nil? ? false : @connection.connected?
+      end
+
       # Generates a request by sending *args to Qbxml::Request.new, sends the request over the current connection,
       # and interprets the response using Qbxml::ResponseSet.
       # The response is then instantiated into an object or an array of objects.
