@@ -6,7 +6,7 @@ require 'rake/gempackagetask'
 require 'rake/contrib/rubyforgepublisher'
 
 PKG_NAME = 'quickbooks'
-PKG_VERSION = "0.4.0"
+PKG_VERSION = "0.4.1"
 
 PKG_FILES = FileList[
     "lib/**/*", "rspec/**/*", "[A-Z]*", "Rakefile", "doc/**/*"

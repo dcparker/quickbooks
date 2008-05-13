@@ -47,3 +47,4 @@ This library is released under the terms of the MIT License.
 * 0.0.5 includes support for ordered qbxml attributes, as well as better error-handling and smarter saving.
 * 0.0.7 includes support for nested finder options, with aliases for easy access. Outdated by bugfixes in the next version.
 * 0.1.0 Bugfixes, a little more docs, and connection is a little more robust.
+* 0.1.1 Small bugfix.
