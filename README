@@ -48,3 +48,5 @@ This library is released under the terms of the MIT License.
 * 0.0.7 includes support for nested finder options, with aliases for easy access. Outdated by bugfixes in the next version.
 * 0.1.0 Bugfixes, a little more docs, and connection is a little more robust.
 * 0.1.1 Small bugfix.
+* 0.4.0 Ready for beta by anyone!
+* 0.4.2 A few bugs worked out, added Quickbooks::Base.setup to initialize arguments for establish_connection().

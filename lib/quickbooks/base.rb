@@ -117,6 +117,10 @@ module Quickbooks
         @@connection_adapter = Object.module_eval("::Quickbooks::#{adapter.to_s.camelize}Adapter::Connection", __FILE__, __LINE__)
       end
 
+      def setup(*args)
+        @@connection_args = args
+      end
+
       # Establishes a connection to the Quickbooks RDS Server for all Model Classes
       def establish_connection(*args)
         @@connection_adapter ||= use_adapter(:ole)
@@ -125,7 +129,7 @@ module Quickbooks
 
       # Returns the current Connection
       def connection
-        @connection || (@@connection ||= self.establish_connection())
+        @connection || (@@connection ||= self.establish_connection(*(@@connection_args)))
       end
 
       # Sets the current Connection.
