@@ -2,15 +2,11 @@ require 'qbxml/support'
 require 'formatted_string'
 
 module Qbxml
-  # module ResponseSetArrayExt
-  # end
-
   class ResponseSet
     include Enumerable
     def set
       unless @set.is_a?(Array)
         @set = []
-        # @set.extend(Qbxml::ResponseSetArrayExt)
       end
       @set
     end
@@ -38,8 +34,6 @@ module Qbxml
     end
 
     def append_from_xml(xml)
-      # puts "ResponseXML:"
-      # puts xml
       self.append_from_hash(xml.formatted(:xml).to_hash)
     end
     def append_from_hash(hsh)
@@ -67,8 +61,7 @@ module Qbxml
 
   class Response
     attr_accessor :response_type, :status, :message, :severity, :ret_items
-    # For Development purposes:
-    attr_accessor :raw_response
+    attr_accessor :raw_response # (for development purposes)
 
     def initialize(xml_or_hash)
       if(xml_or_hash.is_a?(Hash))
@@ -87,24 +80,22 @@ module Qbxml
     def import_from_hash(hsh)
       raise ArgumentError, "Hash passed to Qbxml::Response.from_hash must contain only one top-level key" unless hsh.keys.length == 1
       name = hsh.keys.first
-      # for development
-      self.raw_response = hsh
-      # * * * *
+      self.raw_response = hsh # (for development purposes)
       hsh = hsh[name]
 
       self.status = hsh['statusCode'].to_i
       self.severity = hsh['statusSeverity']
       self.message = hsh['statusMessage']
       # if self.status == 0 # Status is good, proceed with eating the request.
-      # <ListDeletedQueryRs requestID="5" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
-      #   <ListDeletedRet>
-      #     <ListDelType>Customer</ListDelType>
-      #     <ListID>80000030-1203622308</ListID>
-      #     <TimeCreated>2008-02-21T14:31:48-05:00</TimeCreated>
-      #     <TimeDeleted>2008-03-18T17:31:12-05:00</TimeDeleted>
-      #     <FullName>Rachel Parker</FullName>
-      #   </ListDeletedRet>
-      # </ListDeletedQueryRs>
+        # <ListDeletedQueryRs requestID="5" statusCode="0" statusSeverity="Info" statusMessage="Status OK">
+        #   <ListDeletedRet>
+        #     <ListDelType>Customer</ListDelType>
+        #     <ListID>80000030-1203622308</ListID>
+        #     <TimeCreated>2008-02-21T14:31:48-05:00</TimeCreated>
+        #     <TimeDeleted>2008-03-18T17:31:12-05:00</TimeDeleted>
+        #     <FullName>Joe Schmoe</FullName>
+        #   </ListDeletedRet>
+        # </ListDeletedQueryRs>
         if m = name.match(/^(List|Txn)Del(etedQuery)?Rs$/)
           # (List|Txn)DelRs, or (List|Txn)DeletedQueryRs - both return just a few attributes, like ListID / TxnID and TimeDeleted
           list_or_txn = m[1]
@@ -121,7 +112,6 @@ module Qbxml
       # else # Status is bad.
         
       # end
-      # puts self.inspect
       self
     end
 

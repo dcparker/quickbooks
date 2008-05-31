@@ -133,7 +133,7 @@ class Hash
   end
 
   def only(*keys)
-    keys.flatten.inject(dup.clear) {|h,(k,v)| h[k] = self[k]}
+    keys.flatten.inject(dup.clear) {|h,(k,v)| h[k] = self[k]; h}
   end
   def only!(*keys)
     replace(only(*keys))

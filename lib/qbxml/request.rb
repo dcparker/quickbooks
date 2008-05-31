@@ -1,19 +1,16 @@
 require 'qbxml/support'
 require 'builder'
+require 'time'
 require 'hash_magic'
 
 module Qbxml
   VERSION = '6.0'
-
-  # module RequestSetArrayExt
-  # end
 
   class RequestSet
     include Enumerable
     def set
       unless @set.is_a?(Array)
         @set = []
-        # @set.extend(Qbxml::RequestSetArrayExt)
       end
       @set
     end
@@ -190,8 +187,7 @@ thequickbooks_qbxmlrequestsetxml
           inner_stuff.call
         end
       }
-      # puts req.target!
-      req.target!
+      req.target! # The xml string
     end
 
     private

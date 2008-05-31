@@ -11,7 +11,7 @@ module Quickbooks
 
     def self.inherited(klass)
       super
-      # :time_deleted only comes from ListDeleted, but that way all ListDeleted attributes can be instantiated into the respective ListItem model
+      # :time_deleted only comes from ListDeleted, but that way all ListDeleted attributes can be instantiated into their respective ListItem model
       klass.read_only :list_id, :full_name, :edit_sequence, :time_created, :time_modified, :time_deleted
     end
 

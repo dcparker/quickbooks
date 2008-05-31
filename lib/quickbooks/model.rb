@@ -79,7 +79,10 @@ module Quickbooks
         end
       end
 
+      # Lists the registered properties, first read_only properties, then read_write
       def properties
+        # Quickbooks seems to always include the read-only attributes first... if this isn't always true,
+        # the two above methods will need to also append the attribute names into a common properties list.
         read_only + read_write
       end
     end
