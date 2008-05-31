@@ -166,7 +166,7 @@ module Quickbooks
         self.request(reinstantiate || self, *args).each { |response| objects << response.instantiate(reinstantiate) } # Does not instantiate if it's an error, but simply records response into response_log
         # Since Quickbooks only honors the Date in queries, we can filter the list further here to honor the Time requested.
         # filters we're triggered on: created_before, created_after, updated_before, updated_after, deleted_before, deleted_after
-        if args[-1].is_a?(Hash) && !(time_filters = args.stringify_keys.only('created_before', 'created_after', 'updated_before', 'updated_after', 'deleted_before', 'deleted_after')).empty?
+        if args[-1].is_a?(Hash) && !(time_filters = args[-1].stringify_keys.only('created_before', 'created_after', 'updated_before', 'updated_after', 'deleted_before', 'deleted_after')).empty?
           objects.reject! do |object|
             passes = true
             time_filters.each do |filter,time|
