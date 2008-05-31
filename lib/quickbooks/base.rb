@@ -168,8 +168,9 @@ module Quickbooks
         # filters we're triggered on: created_before, created_after, updated_before, updated_after, deleted_before, deleted_after
         if args[-1].is_a?(Hash) && !(time_filters = args[-1].stringify_keys.only('created_before', 'created_after', 'updated_before', 'updated_after', 'deleted_before', 'deleted_after')).empty?
           objects.reject! do |object|
-            passes = true
+            passes = true if object # When there are no results, we actually get [nil]
             time_filters.each do |filter,time|
+              break unless passes # Skip the rest of the tests if it fails one
               case filter
               when 'created_before'
                 passes = Time.parse(object.time_created)  <  Time.parse(time.to_s)
@@ -184,7 +185,6 @@ module Quickbooks
               when 'deleted_after'
                 passes = Time.parse(object.time_deleted)  >= Time.parse(time.to_s)
               end
-              break unless passes # Skip the rest of the tests if it fails one
             end
             !passes
           end
