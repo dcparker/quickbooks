@@ -163,7 +163,7 @@ module Quickbooks
         end
         objects = [] # This will hold and return the instantiated objects from the quickbooks response
         # The following line is subject to unexpected results: IF the response contains more than one object, it will re-instantiate only the last one.
-        self.request(reinstantiate || self, *args).each { |response| objects << response.instantiate(reinstantiate) } # Does not instantiate if it's an error, but simply records response into response_log
+        self.request(reinstantiate || self, *args).each { |response| objects.concat(response.instantiate(reinstantiate)) } # Does not instantiate if it's an error, but simply records response into response_log
         # Since Quickbooks only honors the Date in queries, we can filter the list further here to honor the Time requested.
         # filters we're triggered on: created_before, created_after, updated_before, updated_after, deleted_before, deleted_after
         if args[-1].is_a?(Hash) && !(time_filters = args[-1].stringify_keys.only('created_before', 'created_after', 'updated_before', 'updated_after', 'deleted_before', 'deleted_after')).empty?
@@ -190,7 +190,7 @@ module Quickbooks
           end
         end
         # ****
-        objects.length == 1 ? objects[0] : objects # Here, we may rather always return an array, then return the first element by methods such as .first
+        objects.length == 1 ? objects[0] : objects # Here, we may rather always return an array, then methods such as .first can return just the first element
       end
 
       # Generates a request using Qbxml::Request, sends it, and returns a Qbxml::ResponseSet object containing the response(s).
