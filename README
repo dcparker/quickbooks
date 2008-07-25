@@ -8,8 +8,8 @@ Enjoy and PLEASE contribute either by suggestion or by submitting patches, etc. 
 
 == Download
 
-* http://rubyforge.org/projects/quickbooks
-* svn checkout svn://rubyforge.org/var/svn/quickbooks/trunk
+* http://github.com/dcparker/quickbooks
+* git clone git://github.com/dcparker/quickbooks.git
 
 == Status
 

@@ -1,5 +1,5 @@
 Gem::Specification.new do |s|
-  s.name = %q{quickbooks-ruby}
+  s.name = %q{quickbooks}
   s.version = "0.4.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2.0") if s.respond_to? :required_rubygems_version=
@@ -37,9 +37,9 @@ Gem::Specification.new do |s|
     "specs/spec_helper.rb"
   ]
   s.has_rdoc = true
-  s.homepage = %q{http://github.com/dcparker/quickbooks-ruby}
+  s.homepage = %q{http://github.com/dcparker/quickbooks}
   s.post_install_message = %q{
-    For more information on quicbooks-ruby, see http://github.com/dcparker/quickbooks-ruby
+    For more information on quickbooks, see http://github.com/dcparker/quickbooks
   }
   s.rdoc_options = ["--main", "README"]
   s.require_paths = ["lib"]
