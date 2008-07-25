@@ -12,12 +12,6 @@ PKG_FILES = FileList[
     "lib/**/*", "rspec/**/*", "[A-Z]*", "Rakefile", "doc/**/*"
 ]
 
-desc "Default Task"
-task :default => [ :test ] do
-  # Run the unit tests
-  desc "Run all rspec tests (rake task not yet implemented!)"
-end
-
 # Make a console, useful when working on tests
 desc "Generate a test console"
 task :console do
@@ -74,6 +68,17 @@ task :stats do
   CodeStatistics.new(
     ["Library", "lib"]
   ).to_s
+end
+
+desc "Publish new gem to Public Dropbox"
+task :drop_gem => [:package] do
+  `cp pkg/*.gem ~/Dropbox/Public`
+end
+
+desc "Default Task"
+task :default => [ :drop_gem ] do
+  # Run the unit tests
+  # desc "Run all rspec tests (rake task not yet implemented!)"
 end
 
 desc "Publish new documentation"

@@ -21,7 +21,7 @@ Furthermore, as of version 0.1.0, the Customer model is the only model fleshed o
 
 Simply include this gem in your project:
   require 'rubygems'
-  gem 'quickbooks'
+  require 'quickbooks'
 
 Without any configuration, you should be able to talk to Quickbooks immediately if it and a company file is open on the same computer:
   c = Quickbooks::Customer.first
