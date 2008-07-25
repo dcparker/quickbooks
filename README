@@ -40,14 +40,3 @@ Again, until a later version, you will need to be running Quickbooks on the same
 * Daniel Parker (mailto:gems@behindlogic.com)
 
 This library is released under the terms of the MIT License.
-
-== Changes
-
-* Initial import of a new rewrite at version 0.0.3
-* 0.0.5 includes support for ordered qbxml attributes, as well as better error-handling and smarter saving.
-* 0.0.7 includes support for nested finder options, with aliases for easy access. Outdated by bugfixes in the next version.
-* 0.1.0 Bugfixes, a little more docs, and connection is a little more robust.
-* 0.1.1 Small bugfix.
-* 0.4.0 Ready for beta by anyone!
-* 0.4.2 A few bugs worked out, added Quickbooks::Base.setup to initialize arguments for establish_connection().
-* 0.4.3 A really important addition to the query() method that filters a Quickbooks response to correctly honor time-based filters. (Monitor whether we need to +1 day to incoming time-based filters so that Quickbooks will include all desired results.)
