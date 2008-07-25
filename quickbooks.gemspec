@@ -1,5 +1,5 @@
 Gem::Specification.new do |s|
-  s.name = %q{quickbooks}
+  s.name = 'quickbooks'
   s.version = "0.4.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2.0") if s.respond_to? :required_rubygems_version=
@@ -43,7 +43,7 @@ Gem::Specification.new do |s|
   }
   s.rdoc_options = ["--main", "README"]
   s.require_paths = ["lib"]
-  s.rubyforge_project = %q{quickbooks}
+  s.rubyforge_project = 'quickbooks'
   s.rubygems_version = %q{1.2.0}
   s.test_files = ["specs/qbxml_spec.rb", "specs/quickbooks_spec.rb", "specs/spec_helper.rb"]
 
