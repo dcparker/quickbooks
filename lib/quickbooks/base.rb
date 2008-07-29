@@ -213,7 +213,7 @@ module Quickbooks
         attrs.each do |key,value|
           if obj.respond_to?(key.to_s.underscore+'=')
             obj.send(key.to_s.underscore+'=', value)
-            obj.original_values[key.to_s.underscore] = obj.instance_variable_get('@' + key.to_s.underscore).dup
+            if orig = obj.instance_variable_get('@' + key.to_s.underscore) then obj.original_values[key.to_s.underscore] = orig.dup
           end
         end if attrs
         obj # Will be either a nice object, or a Qbxml::Error object.

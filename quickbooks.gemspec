@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'quickbooks'
-  s.version = "0.4.1"
+  s.version = "0.4.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 1.2.0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Daniel Parker"]
