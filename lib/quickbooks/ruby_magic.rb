@@ -2,7 +2,6 @@
 # See Object, Class, and Hash.
 require 'rubygems'
 require 'hash_magic'
-
 require 'time'
 require 'date'
 
@@ -165,6 +164,10 @@ class Hash
 end
 
 class Array
+  def are_all?(klass)
+    all? {|e| e.is_a?(klass)}
+  end
+
   def stringify_values
     self.dup.stringify_values!
   end

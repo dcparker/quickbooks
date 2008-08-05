@@ -145,10 +145,12 @@ thequickbooks_qbxmlrequestsetxml
                 deep_tag.call(k,v)
               }
             else
-              req.tag!(k.camelize) { v.each { |k,v| deep_tag.call(k,v) } }
+              req.tag!(k.camelize) { v.each { |k,e| deep_tag.call(k,e) } }
             end
+          elsif v.is_a?(Array)
+            req.tag!(k.camelize) { v.each {|e| deep_tag.call(k,e)} }
           else
-            req.tag!(k.camelize,uncast(v))
+            req.tag!(k.camelize,v.respond_to?(:to_xml) ? v.to_xml : uncast(v))
           end
         }
 
