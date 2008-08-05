@@ -1,3 +1,41 @@
+require File.dirname(__FILE__) + '/spec_helper'
+
+describe "quickbooks" do
+  it "should use the test adapter and send test xml" do
+    Quickbooks::Base.use_adapter(:test)
+    Quickbooks::Base.establish_connection
+    Quickbooks::Base.connection.send_xml('12345').should eql('12345')
+  end
+
+  it "should generate a Customer query request" do
+    Quickbooks::Customer.should_receive(:request).and_return do |*args|
+      xml = Qbxml::Request.new(*args).to_xml
+      # Test xml to be correct
+      # Return a sample response
+      Qbxml::ResponseSet.new(
+        Quickbooks::ExampleResponses::MultipleCustomerQueryRs
+      )
+    end
+    Quickbooks::Customer.all
+  end
+
+  it "should grab the first client" do
+    Quickbooks::Customer.should_receive(:request).and_return do |*args|
+      xml = Qbxml::Request.new(*args).to_xml
+      # Test xml to be correct
+      # Return a sample response
+      Qbxml::ResponseSet.new(
+        Quickbooks::ExampleResponses::SingleCustomerQueryRs
+      )
+    end
+
+    j = Quickbooks::Customer.first
+    j.last_name.should eql('Schmoe')
+    j.bill_address.state.should eql('TX')
+  end
+end
+
+
 # To test:
 # 1) Open the RSpec Test Company.QBW file in quickbooks.
 # 2) Password is 'test'
@@ -7,19 +45,20 @@
 #   If you don't have the 'gem' command, try installing
 #   Ruby via the One-Click Ruby Installer for Windows.)
 
-require File.dirname(__FILE__) + '/spec_helper'
-
 describe "quickbooks" do
   it "should connect to the current active quickbooks file" do
+    pending
     Quickbooks::Base.establish_connection
     Quickbooks::Base.connection.send(:connect)
   end
 
   it "should create a session" do
+    pending
     Quickbooks::Base.connection.begin_session
   end
 
   it "should perform an example qbXML query" do
+    pending
     xml = <<-EOL
 <?xml version="1.0" ?>
 <?qbxml version="5.0" ?>
@@ -35,19 +74,23 @@ EOL
   end
 
   it "should gather all clients" do
+    pending
     Quickbooks::Customer.all
   end
 
   it "should grab the first client" do
+    pending
     j = Quickbooks::Customer.first
     j.last_name.should eql('Doe')
   end
 
   it "should instantiate objects into the class they should be" do
+    pending
     Quickbooks::Customer.first.should be_is_a(Quickbooks::Customer)
   end
 
   it "should update the first client's phone number" do
+    pending
     j = Quickbooks::Customer.first
     old_phone = j.phone
     new_phone = '523-998-8821'
@@ -58,6 +101,7 @@ EOL
   end
 
   it "should respect changes made by other people when updating a record, if they don't update the same attributes" do
+    pending
     j = Quickbooks::Customer.first
     k = Quickbooks::Customer.first
     j.phone = (['222-093-8443', '828-981-0092'] - [j.phone])[0]
@@ -71,6 +115,7 @@ EOL
   end
 
   it "should update with changes made by other people, but still save changes, if the record has no conflicts" do
+    pending
     j = Quickbooks::Customer.first
     k = Quickbooks::Customer.first
     # Set up some values
@@ -91,6 +136,7 @@ EOL
   end
 
   it "should not save anything, and leave you with a dirty object, if the record has conflicts" do
+    pending
     j = Quickbooks::Customer.first
     k = Quickbooks::Customer.first
     # Set up some values
@@ -119,17 +165,20 @@ EOL
   end
 
   it "should add a client" do
+    pending
     j = Quickbooks::Customer.new(:name => 'Graham Roosevelt')
     j.save
     j.list_id.should_not be_nil
   end
 
   it "should find a client by name" do
+    pending
     j = Quickbooks::Customer.first(:FullName => 'Graham Roosevelt')
     j.full_name.should eql('Graham Roosevelt')
   end
 
   it "should destroy a client" do
+    pending
     j = Quickbooks::Customer.first(:FullName => 'Graham Roosevelt')
     j.destroy.should eql(true)
   end
