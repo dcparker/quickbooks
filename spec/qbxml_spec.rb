@@ -1,6 +1,4 @@
 require File.dirname(__FILE__) + '/spec_helper'
-require 'rubygems'
-require 'qbxml'
 
 describe Qbxml::Request do
   it "should compare xml-formatted strings correctly" do
@@ -195,18 +193,18 @@ describe Qbxml::Request do
   it "should render a ListDeletedQuery with {filters aliased to nested filter keys} correctly" do
     # DATETIMETYPE == Date#strftime("%Y/%M/%D") || Time#strftime("%Y/%M/%D %H/%m/%s")
     deleted = <<-shshshshshsh
-<QBXML>
-  <QBXMLMsgsRq onError='stopOnError'>
-    <ListDeletedQueryRq requestID = "7">
-      <ListDelType>Customer</ListDelType>
-      <DeletedDateRangeFilter>
-        <FromDeletedDate>2008/10/05</FromDeletedDate>
-        <ToDeletedDate>2008/11/05</ToDeletedDate>
-      </DeletedDateRangeFilter>
-    </ListDeletedQueryRq>
-  </QBXMLMsgsRq>
-</QBXML>
-  shshshshshsh
+    <QBXML>
+      <QBXMLMsgsRq onError='stopOnError'>
+        <ListDeletedQueryRq requestID = "7">
+          <ListDelType>Customer</ListDelType>
+          <DeletedDateRangeFilter>
+            <FromDeletedDate>2008/10/05</FromDeletedDate>
+            <ToDeletedDate>2008/11/05</ToDeletedDate>
+          </DeletedDateRangeFilter>
+        </ListDeletedQueryRq>
+      </QBXMLMsgsRq>
+    </QBXML>
+    shshshshshsh
 
     Qbxml::Request.new(Quickbooks::Customer, :deleted, :deleted_after => '2008/10/05', :deleted_before => '2008/11/05').to_xml.formatted(:xml).should === deleted.formatted(:xml)
   end
@@ -225,7 +223,4 @@ describe Qbxml::Request do
     hsh_b['second'].keys.should == ['after', 'last']
     hsh_b['fifth'].keys.should == ['another', 'day']
   end
-
-  # Testing Orders
-  
 end

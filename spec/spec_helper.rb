@@ -6,4 +6,4 @@ $TESTING=true
 $:.push File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'quickbooks'
-require 'qbxml'
+require File.dirname(__FILE__) + '/example_responses'
