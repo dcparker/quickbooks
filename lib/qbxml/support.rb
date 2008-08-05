@@ -4,18 +4,20 @@ require 'hash_magic'
 
 class Object
   # This allows one to effectively 'proxy' specific methods to be called on the return value of one of its methods.
-  # For example, obj.length could be delegated to do the same thing as obj.full_text.length
+  # For example, obj.length could be delegated to mean obj.full_text.length
   def delegate_methods(hsh)
     raise ArgumentError, "delegate_methods should be called like: delegate_methods [:method1, :method2] => :delegated_to_method" unless hsh.keys.first.is_a?(Array)
     methods = hsh.keys.first
     delegate_to = hsh[methods]
     methods.each do |method|
-      self.send(:eval, <<-ddddddd
-        def #{method}(*args, &block)
-          block_given? ? self.#{delegate_to}.#{method}(*args, &block) : self.#{delegate_to}.#{method}(*args)
-        end
-      ddddddd
-      )
+      code = "def #{method}(*args, &block)\n  block_given? ? self.#{delegate_to}.#{method}(*args, &block) : self.#{delegate_to}.#{method}(*args)\nend"
+      if self.is_a?(Class)
+        self.class_eval(code)
+      elsif self.is_a?(Module)
+        self.module_eval(code)
+      else
+        self.instance_eval(code)
+      end
     end
   end
 
