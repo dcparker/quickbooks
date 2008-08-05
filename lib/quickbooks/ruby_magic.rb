@@ -1,6 +1,6 @@
 # This file contains several little tidbits of magic that I've made to make certain things easier.
 # See Object, Class, and Hash.
-gem 'hash_magic'
+require 'rubygems'
 require 'hash_magic'
 
 require 'time'

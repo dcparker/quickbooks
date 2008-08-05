@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/spec_helper'
 require 'rubygems'
-require 'formatted_string'
+require 'qbxml'
 
 describe Qbxml::Request do
   it "should compare xml-formatted strings correctly" do
@@ -225,4 +225,7 @@ describe Qbxml::Request do
     hsh_b['second'].keys.should == ['after', 'last']
     hsh_b['fifth'].keys.should == ['another', 'day']
   end
+
+  # Testing Orders
+  
 end

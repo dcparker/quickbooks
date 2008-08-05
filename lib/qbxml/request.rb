@@ -4,8 +4,6 @@ require 'time'
 require 'hash_magic'
 
 module Qbxml
-  VERSION = '6.0'
-
   class RequestSet
     include Enumerable
     def set
