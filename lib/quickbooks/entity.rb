@@ -56,6 +56,7 @@ module Quickbooks
           # Instantiates a set containing instances of the singular version of the current model. For example:
           # TxnLineDetailCollection, TxnLineDetailLst, or TxnLineDetails will all be translated to
           # TxnLineDetail for the singular class name.
+          # [TODO] Specify here whether it (the collection) is being instantiated from existing record, or initiated as new.
           def initialize(values=[])
             values = [values] unless values.is_a?(Array)
             values.each do |value|
