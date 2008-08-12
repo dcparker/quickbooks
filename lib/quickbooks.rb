@@ -6,7 +6,7 @@ module Quickbooks
   autoload(:Entity, 'quickbooks/entity')
   autoload(:ListDeleted, 'quickbooks/entities/deleted')
   autoload(:TxnDeleted, 'quickbooks/entities/deleted')
-  [:Customer].each do |name|
+  [:Customer, :SalesOrder].each do |name|
     autoload(name, "quickbooks/entities/#{name.to_s.underscore}")
   end
 

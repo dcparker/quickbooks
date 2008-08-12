@@ -1,13 +1,16 @@
+require 'quickbooks/embedded_entity'
 require 'quickbooks/properties/owner_id'
 require 'quickbooks/properties/data_ext_name'
 require 'quickbooks/properties/data_ext_type'
 require 'quickbooks/properties/data_ext_value'
 module Quickbooks
-  class DataExts < EntityCollection
+  class DataExts < EmbeddedEntities
   end
 
-  # Inherits from Base because it is managed separately from the models it is displayed as a part of.
-  class DataExt < Base
+  # ? ? ? ?
+  # Inherit from Base (?) because it is managed separately from the models it is displayed as a part of.
+  # ? ? ? ?
+  class DataExt < EmbeddedEntity
     properties OwnerID,
                DataExtName[:max_length => {31 => [:QBD, :QBCA, :QBUK, :QBAU]}],
                DataExtType,

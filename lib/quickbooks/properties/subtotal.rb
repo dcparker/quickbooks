@@ -1,5 +1,5 @@
 module Quickbooks
-  class TxnID < IDProperty
+  class Subtotal < AmountProperty
     cannot_modify!
   end
 end

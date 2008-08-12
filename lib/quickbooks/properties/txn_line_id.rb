@@ -1,5 +1,5 @@
 module Quickbooks
-  class TxnID < IDProperty
+  class TxnLineID < IDProperty
     cannot_modify!
   end
 end

@@ -207,9 +207,14 @@ class Array
 end
 
 class String
+  def constantize
+    Object.module_eval("::#{self}", __FILE__, __LINE__)
+  end
+
   def underscore
     gsub(/::/, '/').gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').gsub(/([a-z\d])([A-Z])/,'\1_\2').tr("-", "_").downcase
   end
+
   def camelize
     gsub(/\/(.?)/) { "::" + $1.upcase }.gsub(/(^|_)(.)/) { $2.upcase }
   end

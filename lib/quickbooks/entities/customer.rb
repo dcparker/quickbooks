@@ -1,3 +1,4 @@
+require 'quickbooks/entity'
 require 'quickbooks/properties/name'
 require 'quickbooks/properties/is_active'
 require 'quickbooks/refs/parent_ref'
@@ -7,7 +8,8 @@ require 'quickbooks/properties/first_name'
 require 'quickbooks/properties/middle_name'
 require 'quickbooks/properties/last_name'
 require 'quickbooks/properties/suffix'
-require 'quickbooks/entities/address'
+require 'quickbooks/entities/bill_address'
+require 'quickbooks/entities/ship_address'
 require 'quickbooks/properties/print_as'
 require 'quickbooks/properties/phone'
 require 'quickbooks/properties/mobile'
@@ -49,7 +51,6 @@ module Quickbooks
     properties Name[:max_length => {41 => [:QBD, :QBCA, :QBUK, :QBAU], 100 => :QBOE}],
                IsActive[:not_in => :QBOE],
                ParentRef,
-
                CompanyName[:max_length => {41 => [:QBD, :QBCA, :QBUK, :QBAU], 50 => :QBOE}],
                Salutation[:max_length => 15],
                FirstName[:max_length => 25],
@@ -89,7 +90,8 @@ module Quickbooks
                Notes[:max_length => {4095 => [:QBD, :QBCA, :QBUK, :QBAU]}, :not_in => [:QBOE, 3.0]],
                IsStatementWithParent[:not_in => [:QBD, :QBCA, :QBUK, :QBAU]],
                DeliveryMethod[:not_in => [:QBD, :QBCA, :QBUK, :QBAU]],
-               PriceLevelRef[:not_in => [:QBOE, 4.0]] #, DataExts[:not_in => [:QBOE, 2.0]]
+               PriceLevelRef[:not_in => [:QBOE, 4.0]],
+               DataExts[:not_in => [:QBOE, 2.0]]
   end
 end
 

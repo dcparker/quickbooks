@@ -1,3 +1,28 @@
+require 'quickbooks/refs/customer_ref'
+require 'quickbooks/refs/class_ref'
+require 'quickbooks/refs/template_ref'
+require 'quickbooks/properties/txn_date'
+require 'quickbooks/properties/ref_number'
+require 'quickbooks/entities/bill_address'
+require 'quickbooks/entities/ship_address'
+require 'quickbooks/properties/po_number'
+require 'quickbooks/refs/terms_ref'
+require 'quickbooks/properties/due_date'
+require 'quickbooks/refs/sales_rep_ref'
+require 'quickbooks/properties/fob'
+require 'quickbooks/properties/ship_date'
+require 'quickbooks/properties/subtotal'
+require 'quickbooks/refs/ship_method_ref'
+require 'quickbooks/refs/item_sales_tax_ref'
+require 'quickbooks/properties/is_manually_closed'
+require 'quickbooks/properties/memo'
+require 'quickbooks/refs/customer_msg_ref'
+require 'quickbooks/properties/is_to_be_printed'
+require 'quickbooks/properties/is_to_be_emailed'
+require 'quickbooks/properties/is_tax_included'
+require 'quickbooks/refs/customer_sales_tax_code_ref'
+require 'quickbooks/properties/other'
+require 'quickbooks/embedded_entities/sales_order_lines'
 module Quickbooks
   class SalesOrder < Transaction
     self.valid_filters = ['entity_filter', 'from_modified_date', 'to_modified_date']
@@ -15,6 +40,9 @@ module Quickbooks
                SalesRepRef,
                FOB[:max_length => {13 => [:QBD, :QBCA, :QBUK, :QBAU]}],
                ShipDate,
+               Subtotal[:read_only => true],
+               SalesTaxPercentage[:read_only => true],
+               SalesTaxTotal[:read_only => true],
                ShipMethodRef,
                ItemSalesTaxRef,
                IsManuallyClosed,
@@ -25,7 +53,7 @@ module Quickbooks
                IsTaxIncluded[:not_in => [:QBD, 6.0]],
                CustomerSalesTaxCodeRef,
                Other[:max_length => {29 => [:QBD, :QBCA, :QBUK, :QBAU, 6.0]}],
-               SalesOrderLine
+               SalesOrderLines[:minimum => 1]
   end
 end
 

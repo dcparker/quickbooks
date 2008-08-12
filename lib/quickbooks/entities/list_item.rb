@@ -4,12 +4,12 @@ require 'quickbooks/properties/edit_sequence'
 require 'quickbooks/properties/time_created'
 require 'quickbooks/properties/time_modified'
 require 'quickbooks/properties/time_deleted'
+# A ListItem is identified in quickbooks by ListID. All ListItems also have a unique FullName, so if you know
+# what the FullName of a ListItem is, you can find it that way. Always use the underscore version of finders, such as:
+#   Quickbooks::Customer.first(:list_id => '12345-6789-09876543')
+#   Quickbooks::Deleted.all(:list_del_type => 'Customer', :deleted_after => Time.now - 24*60*60)
+# (See Deleted for specifics on those options.)
 module Quickbooks
-  # A ListItem is identified in quickbooks by ListID. All ListItems also have a unique FullName, so if you know
-  # what the FullName of a ListItem is, you can find it that way. Always use the underscore version of finders, such as:
-  #   Quickbooks::Customer.first(:list_id => '12345-6789-09876543')
-  #   Quickbooks::Deleted.all(:list_del_type => 'Customer', :deleted_after => Time.now - 24*60*60)
-  # (See Deleted for specifics on those options.)
   class ListItem < Base
     self.valid_filters = ['list_id', 'full_name']
     self.filter_aliases = {'updated_after' => 'from_modified_date', 'updated_before' => 'to_modified_date'}
@@ -23,6 +23,12 @@ module Quickbooks
                       TimeCreated,
                       TimeModified,
                       TimeDeleted
+    end
+
+    def to_ref
+      name = (self.class.class_leaf_name + 'Ref')
+      require "quickbooks/refs/#{name.underscore}"
+      ('Quickbooks::' + name).constantize.new(list_id ? {:list_id => list_id} : {:full_name => full_name})
     end
 
     class << self

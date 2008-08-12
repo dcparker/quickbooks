@@ -3,7 +3,7 @@
 # names or whatever they reference. Sorry, it's not necessarily meant to be easy.
 
 $TESTING=true
-$:.push File.join(File.dirname(__FILE__), '..', 'lib')
+$:.push File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 
 require 'quickbooks'
 require 'rubygems'

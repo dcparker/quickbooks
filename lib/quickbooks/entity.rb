@@ -17,19 +17,10 @@ module Quickbooks
   class Entity < Property
     include Properties
 
-    class << self
-      def inherited(base)
-        base.class_eval do
-          def initialize(args={})
-            self.attributes = args
-          end
-        end
-      end
-    end
-
     # The default for all subclasses is simply to apply the attributes given
     def initialize(args={})
-      raise "Inheritance error: Must subclass Entity, never use it directly!"
+      raise "Inheritance error: Must subclass Entity, never use it directly!" if self.class == Entity
+      self.attributes = args
     end
   end
 
@@ -50,30 +41,27 @@ module Quickbooks
       def collection?
         name =~ /Collection$/ ? true : false
       end
-
-      def inherited(base)
-        base.class_eval do
-          # Instantiates a set containing instances of the singular version of the current model. For example:
-          # TxnLineDetailCollection, TxnLineDetailLst, or TxnLineDetails will all be translated to
-          # TxnLineDetail for the singular class name.
-          # [TODO] Specify here whether it (the collection) is being instantiated from existing record, or initiated as new.
-          def initialize(values=[])
-            values = [values] unless values.is_a?(Array)
-            values.each do |value|
-              set << self.class.singular_class.new(value)
-            end
-          end
-        end
-      end
     end
 
+    # Instantiates a set containing instances of the singular version of the current model. For example:
+    # TxnLineDetailCollection, TxnLineDetailLst, or TxnLineDetails will all be translated to
+    # TxnLineDetail for the singular class name.
+    # [TODO] Specify here whether it (the collection) is being instantiated from existing record, or initiated as new.
     def initialize(values=[])
-      raise "Inheritance error: Must subclass EntityCollection, never use it directly!"
+      raise "Inheritance error: Must subclass EntityCollection, never use it directly!" if self.class == EntityCollection
+      values = [values] unless values.is_a?(Array)
+      values.each do |value|
+        set << self.class.singular_class.new(value)
+      end
     end
 
     # Returns the set, or sets a value into the set if given a value
     def set(v=nil)
       v ? (set << v) : (@value ||= [])
+    end
+
+    def length
+      set.length
     end
 
     # Not sure if this would do any good in Quickbooks -- can we modify this information and send it back?

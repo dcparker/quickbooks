@@ -1,4 +1,20 @@
 module Quickbooks
+  # Property is primarily defined in property.rb
+  class Property
+  end
+  # Entity is primarily defined in entity.rb
+  class Entity < Property
+  end
+  # EmbeddedEntity is primarily defined in embedded_entity.rb
+  class EmbeddedEntity < Entity
+  end
+  # # EntityCollection is primarily defined in entity.rb
+  # class EntityCollection < Entity
+  # end
+  # # EmbeddedEntities is primarily defined in embedded_entity.rb
+  # class EmbeddedEntities < EntityCollection
+  # end
+
   PropertyIndex = Object.new
   class << PropertyIndex
     def index
@@ -27,28 +43,31 @@ module Quickbooks
       def properties(*args)
         if args.empty?
           @properties ||= []
-          @properties.select {|p| p.valid_for_current_flavor_and_version?(self)} # Only current flavor-valid properties are ever even considered
+          @properties = @properties.select {|p| p.valid_for_current_flavor_and_version?(self)} # Only current flavor-valid properties are ever even considered
+          @properties
         else
           args.each do |prop|
             prop = [prop, {}] unless prop.is_a?(Array)
-            properties << prop[0]
-            PropertyIndex[self,prop[0]] = prop[1]
-            attr_name = prop[0].class_leaf_name.underscore
+            property = prop[0]
+            properties << property
+            PropertyIndex[self,property] = prop[1]
+# [TODO] This should actually pull from something like property.reader_name and property.writer_name
             class_eval "
-              def #{attr_name}=(v)
-                @#{attr_name} = #{prop[0].name}.new(v)
-                @#{attr_name}.apply_options(PropertyIndex[#{self.class.name},#{prop[0].name}])
+              def #{property.writer_name}(v)
+                @#{property.instance_variable_name} = #{property.name}.new(v)
+                @#{property.instance_variable_name}.apply_options(PropertyIndex[#{self.class.name},#{property.name}])
               end
-              def #{attr_name}
-                @#{attr_name}
-              end"
+              def #{property.reader_name}
+                @#{property.instance_variable_name} ||= #{property.name}.new(nil)
+              end
+            "
           end
         end
       end
 
       # Read-only attributes: These are attributes, but not modifiable in Quickbooks
       def read_only
-        @properties.reject {|p| p.writable?}
+        @properties.reject {|p| p.modifiable?}
       end
 
       # Read-write attributes: can be modified and saved back to Quickbooks
@@ -88,7 +107,8 @@ module Quickbooks
     def dirty?
       # Concept: For each column that the current model includes, has the value been changed?
       self.class.read_write.any? do |column|
-        self.instance_variable_get('@' + column.to_s) != original_values[column.to_s]
+# [TODO] This needs to pull from column.reader
+        self.instance_variable_get('@' + column.instance_variable_name) != original_values[column.reader_name]
       end
     end
 
@@ -98,9 +118,9 @@ module Quickbooks
       compare = original_values if compare.empty?
       pairs = {}
       self.class.read_write.each do |column|
-        value = instance_variable_get('@' + column.to_s)
-        if value != compare[column.to_s]
-          pairs[column.to_s] = value
+        value = instance_variable_get('@' + column.instance_variable_name)
+        if value != compare[column.reader_name]
+          pairs[column.reader_name] = value
         end
       end
       pairs

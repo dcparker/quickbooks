@@ -1,5 +1,5 @@
 module Quickbooks
-  class ListID < StringProperty
+  class ListID < IDProperty
     cannot_modify!
   end
 end

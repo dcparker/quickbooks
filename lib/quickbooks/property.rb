@@ -8,7 +8,12 @@ module Quickbooks
   class Property
     class << self
       def [](options)
-        [self, options]
+        if self.name == 'Quickbooks::Property' && options.is_a?(String)
+          options = options.gsub(/Ret/,'')
+          "Quickbooks::#{options}".constantize
+        else
+          [self, options]
+        end
       end
 
       def modifiable?
@@ -24,11 +29,22 @@ module Quickbooks
         @cannot_append = true
       end
 
+      attr_writer :reader_name, :writer_name
+      def reader_name
+        @reader_name ||= class_leaf_name.underscore
+      end
+      alias :instance_variable_name :reader_name
+      alias :set_reader_name :reader_name=
+      def writer_name
+        @writer_name ||= "#{class_leaf_name.underscore}="
+      end
+      alias :set_writer_name :writer_name=
+
       # Checks whether this property is valid for the current flavor and version.
       def valid_for_current_flavor_and_version?(klass)
-        valids = (Quickbooks::FLAVORS + Quickbooks::version)
-        valids.reject! {|e| PropertyIndex[klass,self][:not_in].include?(e)} if PropertyIndex[klass,self][:not_in]
-        valids.reject! {|e| !PropertyIndex[klass,self][:only_in].include?(e)} if PropertyIndex[klass,self][:only_in]
+        valids = (Quickbooks::FLAVORS + [Quickbooks::version])
+        valids.reject! {|e| [PropertyIndex[klass,self][:not_in]].flatten.include?(e)} if PropertyIndex[klass,self][:not_in]
+        valids.reject! {|e| ![PropertyIndex[klass,self][:only_in]].flatten.include?(e)} if PropertyIndex[klass,self][:only_in]
         valids
       end
     end
@@ -64,7 +80,11 @@ module Quickbooks
       def inherited(base)
         base.class_eval do
           def initialize(value=nil)
-            @value = value
+            if value.is_a?(self.class)
+              @value = value.value
+            else
+              @value = value
+            end
             validate!
           end
         end
@@ -104,9 +124,10 @@ module Quickbooks
       cast(@value)
     end
 
-    def to_xml
+    def to_s
       value.to_s
     end
+    alias :to_xml :to_s
 
     private
       def cast(v)
@@ -150,12 +171,12 @@ module Quickbooks
     validations << ["Must be a datetime value", lambda {|value| value.is_a?(Date) || value.is_a?(DateTime) || value.is_a?(Time)}]
 
     def to_xml
-      value.xmlschema
+      value.is_a?(String) ? value : value.xmlschema
     end
     
     private
       def cast(v)
-        v.to_date
+        v.strftime("%Y-%m-%d")
       end
   end
   class EnumProperty < ValueProperty
@@ -188,11 +209,27 @@ module Quickbooks
         v.to_i
       end
   end
+  class QuantityProperty < IntegerProperty
+  end
+  class IDProperty < StringProperty
+  end
   class PriceProperty < ValueProperty
   end
   class PercentProperty < ValueProperty
   end
   class Ref < Entity
-    # Put in here the connector code that can find the ref'd item.
+    def self.new(obj)
+      if obj.is_a?(Ref)
+        obj
+      elsif obj.respond_to?(:to_ref)
+        obj.to_ref
+      elsif obj.is_a?(Hash)
+        new_obj = allocate
+        new_obj.send(:initialize, obj)
+        new_obj
+      else
+        raise ArgumentError, "Must be a Ref, an Ref-able Object, or a Hash"
+      end
+    end
   end
 end

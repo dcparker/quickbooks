@@ -17,12 +17,6 @@ module Quickbooks
                Country[:max_length => {31 => [:QBD, :QBCA, :QBUK, :QBAU], 255 => :QBOE}],
                Note[:max_length => {41 => [:QBD, :QBCA, :QBUK, :QBAU]}, :not_in => [:QBOE, 6.0]]
   end
-
-  class BillAddress < Address
-  end
-  
-  class ShipAddress < Address
-  end
 end
 
 # <BillAddress>                                       <!-- opt -->

@@ -1,5 +1,5 @@
-# Contains Quickbooks::Base, which inherits from Quickbooks::Model. Simple objects like BillAddress and CreditCardInfo also
-# inherit from Quickbooks::Model, but any objects that are stored as their own 'entity' are below Quickbooks::Base in the
+# Contains Quickbooks::Base, which inherits from Quickbooks::Entity. Simple objects like BillAddress and CreditCardInfo also
+# inherit from Quickbooks::Entity, but any objects that are stored as their own 'entity' are below Quickbooks::Base in the
 # inheritance tree. Two models inherit directly from Quickbooks::Base: ListItem and Transaction. All other whole-entity
 # models inherit from either of these. Only a couple are written so far, as I've had use for them. They're pretty easy to
 # write though -- take a look at customer.rb, for example: all that needs defining for most models is any filters (and aliases)
@@ -14,7 +14,7 @@ module Quickbooks
   # This should be deprecated, but haven't implemented into qbxml yet.
   CAMELIZE_EXCEPTIONS = {'list_id' => 'ListID', 'txn_id' => 'TxnID', 'owner_id' => 'OwnerID'}
 
-  # Base is just base for ListItem and Transaction. It inherits from Model, just as Ref does.
+  # Base is just base for ListItem and Transaction. It inherits from Entity, just as Ref does.
   # 
   # Some Qbxml specifications require certain finder-options to be placed inside a containing entity, such as:
   #   ...
@@ -23,7 +23,7 @@ module Quickbooks
   #     <ToDeletedDate>#{(Time.now - 3*60*60).xmlschema}</ToDeletedDate>
   #   </DeletedDateRangeFilter>
   #   ...
-  # The Quickbooks Models define aliases to these "inside" options. The equivalent to the above [partial] request:
+  # The Quickbooks Entities define aliases to these "inside" options. The equivalent to the above [partial] request:
   #   Quickbooks::Deleted.all(:deleted_after => (Time.now - 5*60*60).xmlschema, :deleted_before => (Time.now - 3*60*60).xmlschema)
   # (Type-casting hasn't made it in yet.)
   # 
@@ -74,7 +74,7 @@ module Quickbooks
         @@connection_args = args
       end
 
-      # Establishes a connection to the Quickbooks RDS Server for all Model Classes
+      # Establishes a connection to the Quickbooks RDS Server for all Base Classes
       def establish_connection(*args)
         @@connection_adapter ||= use_adapter(:ole)
         @@connection = @@connection_adapter.new(*args)
@@ -89,7 +89,7 @@ module Quickbooks
       # 
       # This is normally not needed, but in the case that you may want to connect a separate connection to Quickbooks,
       # you can use this method to explicitly set the connection in a class that inherits from Quickbooks::Base.
-      #   Quickbooks::Models::Base.connection = Quickbooks::Connection.new('My Test App', 'C:\\Some File.QBW', 'user', 'pass')
+      #   Quickbooks::Base.connection = Quickbooks::Connection.new('My Test App', 'C:\\Some File.QBW', 'user', 'pass')
       def connection=(conn)
         raise ArgumentError, "Cannot set connection to anything but a (*)Adapter::Connection object" unless conn.class.name =~ /Adapter::Connection$/
         @connection = conn
@@ -163,10 +163,12 @@ module Quickbooks
           obj = allocate
           attrs = obj_or_attrs
         end
+        # puts "BASE Attributes: #{attrs.inspect}"
+
         attrs.each do |key,value|
-          if obj.respond_to?(key.to_s.underscore+'=')
-            obj.send(key.to_s.underscore+'=', value)
-            obj.original_values[key.to_s.underscore] = obj.instance_variable_get('@' + key.to_s.underscore).dup
+          if obj.respond_to?(Property[key].writer_name)
+            obj.send(Property[key].writer_name, value)
+            obj.original_values[Property[key].reader_name] = obj.instance_variable_get('@' + Property[key].instance_variable_name).dup rescue nil
           end
         end if attrs
         obj # Will be either a nice object, or a Qbxml::Error object.
@@ -216,7 +218,7 @@ module Quickbooks
 
     # Generates a new object that can be saved into Quickbooks once the required attributes are set.
     def initialize(*args)
-      super # from Quickbooks::Model - sets the *args into attributes
+      super # from Quickbooks::Entity - sets the *args into attributes
       @new_record = true
     end
 
@@ -250,6 +252,7 @@ module Quickbooks
           # 'Revert' fields I didn't modify to equal the values of the more up-to-date record just loaded.
           # Fields I didn't modify: dirty_attributes - dirty_attributes(old_originals).keys
           (dirty_attributes - dirty_attributes(old_originals).keys).each_key do |at|
+# if respond_to?(at + '=') -- won't work correctly for all properties!
             self.send(at + '=', original_values[at]) if respond_to?(at + '=')
           end
           ret = self.save
