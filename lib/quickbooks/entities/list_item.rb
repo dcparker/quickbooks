@@ -28,7 +28,7 @@ module Quickbooks
     def to_ref
       name = (self.class.class_leaf_name + 'Ref')
       require "quickbooks/refs/#{name.underscore}"
-      ('Quickbooks::' + name).constantize.new(list_id ? {:list_id => list_id} : {:full_name => full_name})
+      Property[name].new(list_id ? {:list_id => list_id} : {:full_name => full_name})
     end
 
     class << self

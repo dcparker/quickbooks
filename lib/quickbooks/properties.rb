@@ -106,8 +106,7 @@ module Quickbooks
     # Returns true if any attributes have changed since the object was last loaded or updated from Quickbooks.
     def dirty?
       # Concept: For each column that the current model includes, has the value been changed?
-      self.class.read_write.any? do |column|
-# [TODO] This needs to pull from column.reader
+      self.new_record? || self.class.read_write.any? do |column|
         self.instance_variable_get('@' + column.instance_variable_name) != original_values[column.reader_name]
       end
     end
@@ -119,9 +118,7 @@ module Quickbooks
       pairs = {}
       self.class.read_write.each do |column|
         value = instance_variable_get('@' + column.instance_variable_name)
-        if value != compare[column.reader_name]
-          pairs[column.reader_name] = value
-        end
+        pairs[column.reader_name] = value if value != compare[column.reader_name]
       end
       pairs
     end
@@ -129,11 +126,7 @@ module Quickbooks
     def to_dirty_hash
       hsh = SlashedHash.new.ordered!(self.class.read_write.stringify_values)
       self.dirty_attributes.each do |key,value|
-        if value.is_a?(Quickbooks::Entity)
-          hsh[key] = value.to_dirty_hash
-        else
-          hsh[key] = value
-        end
+        hsh[key] = value.is_a?(Quickbooks::Entity) ? value.to_dirty_hash : value
       end
       hsh
     end
@@ -141,11 +134,7 @@ module Quickbooks
     def to_hash(include_read_only=false)
       hsh = SlashedHash.new.ordered!((include_read_only ? self.class.properties : self.class.read_write).stringify_values)
       self.attributes(include_read_only).each do |key,value|
-        if value.is_a?(Quickbooks::Entity)
-          hsh[key] = value.to_hash(include_read_only)
-        else
-          hsh[key] = value
-        end
+        hsh[key] = value.is_a?(Quickbooks::Entity) ? value.to_hash(include_read_only) : value
       end
       hsh
     end

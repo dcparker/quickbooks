@@ -89,9 +89,11 @@ describe Quickbooks do
     end
     so.should be_new_record
     so.should be_dirty
+    so.should be_respond_to(:customer)
     so.customer.list_id.value.should eql(joe.to_ref.list_id.value)
+    # puts so.customer.dirty_attributes
+    so.customer.should be_dirty
     so.save
-    # so.should be_respond_to(:customer)
   end
 
   it "should instantiate an EmbeddedEntity correctly from XML" do
