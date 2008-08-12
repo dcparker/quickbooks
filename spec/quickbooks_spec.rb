@@ -55,11 +55,11 @@ describe Quickbooks do
   it "should assign a *_ref property" do
     joe = Quickbooks::Customer.first
     joe.to_ref.class.name.should eql('Quickbooks::CustomerRef')
-    so = Quickbooks::SalesOrder.new(:customer_ref => joe.to_ref)
-    so.customer_ref.class.name.should eql('Quickbooks::CustomerRef')
-    so = Quickbooks::SalesOrder.new(:customer_ref => joe, :txn_date => Date.today)
-    so.customer_ref.class.name.should eql('Quickbooks::CustomerRef')
-    so.customer_ref.list_id.value.should eql(joe.list_id.value)
+    so = Quickbooks::SalesOrder.new(:customer => joe.to_ref)
+    so.customer.class.name.should eql('Quickbooks::CustomerRef')
+    so = Quickbooks::SalesOrder.new(:customer => joe, :txn_date => Date.today)
+    so.customer.class.name.should eql('Quickbooks::CustomerRef')
+    so.customer.list_id.value.should eql(joe.list_id.value)
   end
 
   it "should operate internal associations with embedded entities" do
@@ -73,7 +73,7 @@ describe Quickbooks do
     # pending "TODO - Embedded Entities - to xml"
     joe = Quickbooks::Customer.first
     # puts "Joe: #{joe} / #{joe.to_ref}"
-    so = Quickbooks::SalesOrder.new(:customer_ref => joe, :txn_date => Time.now)
+    so = Quickbooks::SalesOrder.new(:customer => joe, :txn_date => Time.now)
     Quickbooks::Base.connection.next_response(Quickbooks::ExampleResponses::SalesOrderAddRsA) do |request_xml|
       puts "REQUEST XML:\n#{request_xml}"
       # <QBXML>
@@ -89,6 +89,7 @@ describe Quickbooks do
     end
     so.should be_new_record
     so.should be_dirty
+    so.customer.list_id.value.should eql(joe.to_ref.list_id.value)
     so.save
     # so.should be_respond_to(:customer)
   end

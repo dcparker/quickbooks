@@ -8,9 +8,9 @@ module Quickbooks
   class Property
     class << self
       def [](options)
-        if self.name == 'Quickbooks::Property' && options.is_a?(String)
-          options = options.gsub(/Ret/,'')
-          "Quickbooks::#{options}".constantize
+        if self.name == 'Quickbooks::Property' && !options.is_a?(Hash)
+          options = options.to_s.gsub(/Ret/,'')
+          "Quickbooks::#{options}".constantize rescue nil
         else
           [self, options]
         end
@@ -33,7 +33,9 @@ module Quickbooks
       def reader_name
         @reader_name ||= class_leaf_name.underscore
       end
-      alias :instance_variable_name :reader_name
+      def instance_variable_name
+        reader_name
+      end
       alias :set_reader_name :reader_name=
       def writer_name
         @writer_name ||= "#{class_leaf_name.underscore}="

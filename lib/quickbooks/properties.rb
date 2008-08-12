@@ -51,7 +51,6 @@ module Quickbooks
             property = prop[0]
             properties << property
             PropertyIndex[self,property] = prop[1]
-# [TODO] This should actually pull from something like property.reader_name and property.writer_name
             class_eval "
               def #{property.writer_name}(v)
                 @#{property.instance_variable_name} = #{property.name}.new(v)
@@ -92,8 +91,9 @@ module Quickbooks
     def attributes=(attrs)
       raise ArgumentError, "attributes can only be set to a hash of attributes" unless attrs.is_a?(Hash)
       attrs.each do |key,value|
-        if self.respond_to?(key.to_s.underscore+'=')
-          self.send(key.to_s.underscore+'=', value)
+        writer_method = key.is_a?(Symbol) ? key.to_s+'=' : Property[key].writer_name
+        if self.respond_to?(writer_method)
+          self.send(writer_method, value)
         end
       end
     end

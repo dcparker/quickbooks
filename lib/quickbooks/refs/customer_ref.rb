@@ -4,6 +4,13 @@ module Quickbooks
   class CustomerRef < Ref
     properties ListID,
                FullName[:max_length => {209 => [:QBD, :QBCA, :QBUK, :QBAU]}]
+
+    def self.reader_name
+      @reader_name ||= 'customer'
+    end
+    def self.writer_name
+      @writer_name ||= 'customer='
+    end
   end
 end
 
