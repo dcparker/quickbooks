@@ -12,6 +12,10 @@ require 'quickbooks/refs/sales_rep_ref'
 require 'quickbooks/properties/fob'
 require 'quickbooks/properties/ship_date'
 require 'quickbooks/properties/subtotal'
+require 'quickbooks/properties/sales_tax_percentage'
+require 'quickbooks/properties/sales_tax_total'
+require 'quickbooks/properties/total_amount'
+require 'quickbooks/properties/is_fully_invoiced'
 require 'quickbooks/refs/ship_method_ref'
 require 'quickbooks/refs/item_sales_tax_ref'
 require 'quickbooks/properties/is_manually_closed'
@@ -40,12 +44,14 @@ module Quickbooks
                SalesRepRef,
                FOB[:max_length => {13 => [:QBD, :QBCA, :QBUK, :QBAU]}],
                ShipDate,
-               Subtotal[:read_only => true],
-               SalesTaxPercentage[:read_only => true],
-               SalesTaxTotal[:read_only => true],
                ShipMethodRef,
                ItemSalesTaxRef,
                IsManuallyClosed,
+               Subtotal[:read_only => true],
+               SalesTaxPercentage[:read_only => true],
+               SalesTaxTotal[:read_only => true],
+               TotalAmount[:read_only => true],
+               IsFullyInvoiced[:read_only => true],
                Memo[:max_length => {4095 => [:QBD, :QBCA, :QBUK, :QBAU]}],
                CustomerMsgRef,
                IsToBePrinted,

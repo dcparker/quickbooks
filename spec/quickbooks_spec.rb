@@ -72,15 +72,27 @@ describe Quickbooks do
   it "should create a correct Add request containing an EmbeddedEntity" do
     # pending "TODO - Embedded Entities - to xml"
     joe = Quickbooks::Customer.first
+    # puts "Joe: #{joe} / #{joe.to_ref}"
     so = Quickbooks::SalesOrder.new(:customer_ref => joe, :txn_date => Time.now)
     Quickbooks::Base.connection.next_response(Quickbooks::ExampleResponses::SalesOrderAddRsA) do |request_xml|
       puts "REQUEST XML:\n#{request_xml}"
+      # <QBXML>
+      # <QBXMLMsgsRq onError="stopOnError">
+      # <SalesOrderAddRq requestID="13">
+      #   <SalesOrderAdd>
+      #     <TxnDate>2008-08-12</TxnDate>
+      #   </SalesOrderAdd>
+      # </SalesOrderAddRq>
+      # </QBXMLMsgsRq>
+      # </QBXML>
+      request_xml.formatted(:xml).to_hash['QBXML']['QBXMLMsgsRq']['SalesOrderAddRq']['SalesOrderAdd'].should have_key('CustomerRef')
     end
     so.should be_new_record
     so.should be_dirty
     so.save
+    # so.should be_respond_to(:customer)
   end
-  
+
   it "should instantiate an EmbeddedEntity correctly from XML" do
     pending "TODO - Embedded Entities - from xml"
   end
