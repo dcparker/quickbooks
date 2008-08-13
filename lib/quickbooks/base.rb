@@ -155,25 +155,6 @@ module Quickbooks
         )
       end
 
-      # Instantiate a new object with just attributes, or an existing object replacing the attributes
-      def instantiate(obj_or_attrs={},attrs={})
-        if obj_or_attrs.is_a?(Quickbooks::Base)
-          obj = obj_or_attrs
-        else
-          obj = allocate
-          attrs = obj_or_attrs
-        end
-        # puts "BASE Attributes: #{attrs.inspect}"
-
-        attrs.each do |key,value|
-          if obj.respond_to?(Property[key].writer_name)
-            obj.send(Property[key].writer_name, value)
-            obj.original_values[Property[key].reader_name] = obj.instance_variable_get('@' + Property[key].instance_variable_name).dup rescue nil
-          end
-        end if attrs
-        obj # Will be either a nice object, or a Qbxml::Error object.
-      end
-
       # Queries Quickbooks for all of the objects of the current class's type. For example, Quickbooks::Customer.all will return an array of Quickbooks::Customer objects representing all customers.
       def all(filters={})
         filters.reverse_merge!(:active_status => 'All')
@@ -216,17 +197,6 @@ module Quickbooks
 
     self.filter_aliases = {:limit => :max_returned}
 
-    # Generates a new object that can be saved into Quickbooks once the required attributes are set.
-    def initialize(*args)
-      super # from Quickbooks::Entity - sets the *args into attributes
-      @new_record = true
-    end
-
-    # Returns true if the object is a new object (that doesn't represent an existing object in Quickbooks).
-    def new_record?
-      @new_record
-    end
-
     # Saves the attributes that have changed.
     # 
     # If the EditSequence is out of date but none of the changes conflict, the object will be saved to Quickbooks.
@@ -252,7 +222,7 @@ module Quickbooks
           # 'Revert' fields I didn't modify to equal the values of the more up-to-date record just loaded.
           # Fields I didn't modify: dirty_attributes - dirty_attributes(old_originals).keys
           (dirty_attributes - dirty_attributes(old_originals).keys).each_key do |at|
-# if respond_to?(at + '=') -- won't work correctly for all properties!
+# [TODO] Fix to use something like Property[at].writer_name
             self.send(at + '=', original_values[at]) if respond_to?(at + '=')
           end
           ret = self.save

@@ -85,7 +85,7 @@ thequickbooks_qbxmlrequestsetxml
       end
 
       # Return only specific properties: Request.new(Customer, :query, :only => [:list_id, :full_name]); Quickbooks::Customer.first(:only => :list_id)
-      @ret_elements = @options.delete(:only).to_a.only(@klass.properties).ordered(@klass.properties).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
+      @ret_elements = @options.delete(:only).to_a.only(@klass.property_names).ordered(@klass.property_names).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
 
       # Includes only valid filters + aliases for valid filters, # => {underscore/slashed keys + aliases}
       # then transforms aliased filters to real filters, # => {underscore/slashed keys}

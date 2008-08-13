@@ -91,8 +91,9 @@ describe Quickbooks do
     so.should be_dirty
     so.should be_respond_to(:customer)
     so.customer.list_id.value.should eql(joe.to_ref.list_id.value)
-    # puts so.customer.dirty_attributes
     so.customer.should be_dirty
+# To get this to work, I need instance-specific property options.
+    so.customer.dirty_attributes.should have_key('ListID')
     so.save
   end
 

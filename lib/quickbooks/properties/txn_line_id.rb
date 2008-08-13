@@ -1,5 +1,5 @@
 module Quickbooks
   class TxnLineID < IDProperty
-    cannot_modify!
+    read_only!
   end
 end

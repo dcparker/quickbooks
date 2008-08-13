@@ -15,6 +15,29 @@ module Quickbooks
   # class EmbeddedEntities < EntityCollection
   # end
 
+  # Some features in here would work better with dynamic inheritance!
+  class ClassProperty
+    attr_accessor :klass, :options
+
+    def initialize(property_class, options={})
+      @klass    = property_class
+      @options  = options
+    end
+
+    def inspect
+      "<Property:#{@klass.class_leaf_name} #{options.inspect.gsub(/\{\}/,'')}>"
+    end
+
+    def self.cascade(method,klass_method=nil)
+      class_eval "def #{method}; options[:#{method.to_s.gsub(/\?$/,'')}] || @klass.#{klass_method || method} end"
+    end
+    cascade :writable?
+    cascade :name
+    cascade :instance_variable_name
+    cascade :writer_name
+    cascade :reader_name
+  end
+
   PropertyIndex = Object.new
   class << PropertyIndex
     def index
@@ -43,18 +66,14 @@ module Quickbooks
       def properties(*args)
         if args.empty?
           @properties ||= []
-          @properties = @properties.select {|p| p.valid_for_current_flavor_and_version?(self)} # Only current flavor-valid properties are ever even considered
-          @properties
         else
           args.each do |prop|
-            prop = [prop, {}] unless prop.is_a?(Array)
-            property = prop[0]
+            property, options = prop.is_a?(Array) ? prop : [prop, {}]
+            property = ClassProperty.new(property, options)
             properties << property
-            PropertyIndex[self,property] = prop[1]
             class_eval "
               def #{property.writer_name}(v)
                 @#{property.instance_variable_name} = #{property.name}.new(v)
-                @#{property.instance_variable_name}.apply_options(PropertyIndex[#{self.class.name},#{property.name}])
               end
               def #{property.reader_name}
                 @#{property.instance_variable_name} ||= #{property.name}.new(nil)
@@ -63,26 +82,58 @@ module Quickbooks
           end
         end
       end
+      def property_names
+        @properties.collect {|p| p.klass.name}
+      end
 
       # Read-only attributes: These are attributes, but not modifiable in Quickbooks
       def read_only
-        @properties.reject {|p| p.modifiable?}
+        @properties.reject {|p| p.writable?}
+      end
+      def read_only_names
+        read_only.collect {|p| p.klass.name}
       end
 
       # Read-write attributes: can be modified and saved back to Quickbooks
       def read_write
         @properties - read_only
       end
+      def read_write_names
+        read_write.collect {|p| p.klass.name}
+      end
+
+      # Instantiate a new object with just attributes, or an existing object replacing the attributes
+      def instantiate(obj_or_attrs={},attrs={})
+        if obj_or_attrs.is_a?(Property)
+          obj = obj_or_attrs
+        else
+          obj = allocate
+          attrs = obj_or_attrs
+        end
+        # puts "BASE Attributes: #{attrs.inspect}"
+
+        attrs.each do |key,value|
+          if obj.respond_to?(Property[key].writer_name)
+            obj.send(Property[key].writer_name, value)
+            obj.original_values[Property[key].reader_name] = obj.instance_variable_get('@' + Property[key].instance_variable_name).dup rescue nil
+          end
+        end if attrs
+        obj # Will be either a nice object, or a Qbxml::Error object.
+      end
     end
 
     # *** *** *** ***
     # Instance Methods
 
+    def initialize(*args)
+      @new_record = true
+    end
+
     # Returns a hash that represents all this object's attributes.
     def attributes(include_read_only=false)
       attrs = {}
       (include_read_only ? self.class.properties : self.class.read_write).each do |column|
-        attrs[column.to_s] = instance_variable_get('@' + column.to_s)
+        attrs[column.instance_variable_name] = instance_variable_get('@' + column.instance_variable_name)
       end
       attrs
     end
@@ -96,6 +147,11 @@ module Quickbooks
           self.send(writer_method, value)
         end
       end
+    end
+
+    # Returns true if the object is a new object (that doesn't represent an existing object in Quickbooks).
+    def new_record?
+      @new_record
     end
 
     # Keeps track of the original values the object had when it was instantiated from a quickbooks response. dirty? and dirty_attributes compare the current values with these ones.
@@ -132,7 +188,7 @@ module Quickbooks
     end
 
     def to_hash(include_read_only=false)
-      hsh = SlashedHash.new.ordered!((include_read_only ? self.class.properties : self.class.read_write).stringify_values)
+      hsh = SlashedHash.new.ordered!((include_read_only ? self.class.property_names : self.class.read_write_names).stringify_values)
       self.attributes(include_read_only).each do |key,value|
         hsh[key] = value.is_a?(Quickbooks::Entity) ? value.to_hash(include_read_only) : value
       end
@@ -141,8 +197,8 @@ module Quickbooks
 
     def ==(other)
       return false unless other.is_a?(self.class)
-      !self.class.read_write.any? do |column|
-        self.instance_variable_get('@' + column.to_s) != other.instance_variable_get('@' + column.to_s)
+      !self.class.read_write.any? do |property|
+        self.instance_variable_get('@' + property.instance_variable_name) != other.instance_variable_get('@' + property.instance_variable_name)
       end
     end
 

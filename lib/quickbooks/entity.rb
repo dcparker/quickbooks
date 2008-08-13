@@ -20,6 +20,7 @@ module Quickbooks
     # The default for all subclasses is simply to apply the attributes given
     def initialize(args={})
       raise "Inheritance error: Must subclass Entity, never use it directly!" if self.class == Entity
+      super
       self.attributes = args
     end
   end

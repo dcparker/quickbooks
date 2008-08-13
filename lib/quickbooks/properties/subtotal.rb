@@ -1,5 +1,5 @@
 module Quickbooks
   class Subtotal < AmountProperty
-    cannot_modify!
+    read_only!
   end
 end

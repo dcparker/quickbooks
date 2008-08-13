@@ -16,10 +16,10 @@ module Quickbooks
         end
       end
 
-      def modifiable?
+      def writable?
         !@cannot_modify
       end
-      def cannot_modify!
+      def read_only!
         @cannot_modify = true
       end
       def appendable?
@@ -63,10 +63,10 @@ module Quickbooks
       end
     end
 
-    def modifiable?
-      @cannot_modify.nil? ? self.class.modifiable? : !@cannot_modify
+    def writable?
+      @cannot_modify.nil? ? self.class.writable? : !@cannot_modify
     end
-    def cannot_modify!
+    def read_only!
       @cannot_modify = true
     end
     def appendable?
