@@ -42,7 +42,7 @@ require 'quickbooks/properties/notes'
 require 'quickbooks/properties/is_statement_with_parent'
 require 'quickbooks/properties/delivery_method'
 require 'quickbooks/refs/price_level_ref'
-require 'quickbooks/entities/data_ext'
+require 'quickbooks/embedded_entities/data_ext'
 
 module Quickbooks
   class Customer < ListItem

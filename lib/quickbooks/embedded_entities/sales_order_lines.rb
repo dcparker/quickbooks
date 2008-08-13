@@ -4,15 +4,17 @@ require 'quickbooks/refs/item_ref'
 require 'quickbooks/properties/desc'
 require 'quickbooks/properties/quantity'
 require 'quickbooks/properties/unit_of_measure'
+require 'quickbooks/refs/override_uom_set_ref'
 require 'quickbooks/properties/rate'
 require 'quickbooks/properties/rate_percent'
 require 'quickbooks/refs/price_level_ref'
 require 'quickbooks/refs/class_ref'
 require 'quickbooks/properties/amount'
 require 'quickbooks/refs/sales_tax_code_ref'
+require 'quickbooks/properties/invoiced'
 require 'quickbooks/properties/is_manually_closed'
 require 'quickbooks/properties/other'
-require 'quickbooks/entities/data_ext'
+require 'quickbooks/embedded_entities/data_ext'
 module Quickbooks
   class SalesOrderLine < EmbeddedEntity
     properties TxnLineID,
@@ -20,12 +22,14 @@ module Quickbooks
                Desc[:max_length => {4095 => [:QBD, :QBCA, :QBUK, :QBAU]}],
                Quantity,
                UnitOfMeasure[:max_length => {31 => [:QBD, :QBCA, :QBUK, :QBAU, 7.0]}],
+               OverrideUOMSetRef[:writable => false],
                Rate,
                RatePercent,
                PriceLevelRef[:only_in => 4.0],
                ClassRef,
                Amount,
                SalesTaxCodeRef,
+               Invoiced[:writable => false],
                IsManuallyClosed,
                Other1[:max_length => {29 => [:QBD, :QBCA, :QBUK, :QBAU, 6.0]}],
                Other2[:max_length => {29 => [:QBD, :QBCA, :QBUK, :QBAU, 6.0]}] #, DataExts[:only_in => 5.0]

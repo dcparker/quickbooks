@@ -1,10 +1,13 @@
+require 'quickbooks/properties/txn_number'
 require 'quickbooks/refs/customer_ref'
 require 'quickbooks/refs/class_ref'
 require 'quickbooks/refs/template_ref'
 require 'quickbooks/properties/txn_date'
 require 'quickbooks/properties/ref_number'
 require 'quickbooks/entities/bill_address'
+require 'quickbooks/entities/bill_address_block'
 require 'quickbooks/entities/ship_address'
+require 'quickbooks/entities/ship_address_block'
 require 'quickbooks/properties/po_number'
 require 'quickbooks/refs/terms_ref'
 require 'quickbooks/properties/due_date'
@@ -26,18 +29,22 @@ require 'quickbooks/properties/is_to_be_emailed'
 require 'quickbooks/properties/is_tax_included'
 require 'quickbooks/refs/customer_sales_tax_code_ref'
 require 'quickbooks/properties/other'
+require 'quickbooks/entities/linked_txn'
 require 'quickbooks/embedded_entities/sales_order_lines'
 module Quickbooks
   class SalesOrder < Transaction
     self.valid_filters = ['entity_filter', 'from_modified_date', 'to_modified_date']
 
-    properties CustomerRef[:required => true],
+    properties TxnNumber[:writable => false],
+               CustomerRef[:required => true],
                ClassRef,
                TemplateRef[:only_in => 3.0],
                TxnDate,
                RefNumber[:max_length => {11 => [:QBD, :QBCA, :QBUK, :QBAU]}],
                BillAddress,
+               BillAddressBlock[:writable => false],
                ShipAddress,
+               ShipAddressBlock[:writable => false],
                PONumber[:max_length => {25 => [:QBD, :QBCA, :QBUK, :QBAU]}],
                TermsRef,
                DueDate,
@@ -47,11 +54,11 @@ module Quickbooks
                ShipMethodRef,
                ItemSalesTaxRef,
                IsManuallyClosed,
-               Subtotal[:read_only => true],
-               SalesTaxPercentage[:read_only => true],
-               SalesTaxTotal[:read_only => true],
-               TotalAmount[:read_only => true],
-               IsFullyInvoiced[:read_only => true],
+               Subtotal[:writable => false],
+               SalesTaxPercentage[:writable => false],
+               SalesTaxTotal[:writable => false],
+               TotalAmount[:writable => false],
+               IsFullyInvoiced[:writable => false],
                Memo[:max_length => {4095 => [:QBD, :QBCA, :QBUK, :QBAU]}],
                CustomerMsgRef,
                IsToBePrinted,
@@ -59,6 +66,7 @@ module Quickbooks
                IsTaxIncluded[:not_in => [:QBD, 6.0]],
                CustomerSalesTaxCodeRef,
                Other[:max_length => {29 => [:QBD, :QBCA, :QBUK, :QBAU, 6.0]}],
+               LinkedTxns[:writable => false],
                SalesOrderLines[:minimum => 1]
   end
 end

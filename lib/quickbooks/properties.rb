@@ -183,7 +183,7 @@ module Quickbooks
     def to_dirty_hash(camelized_keys=false)
       hsh = SlashedHash.new.ordered!(self.class.read_write.stringify_values)
       self.dirty_attributes({}, camelized_keys).each do |key,value|
-        hsh[key] = value.is_a?(Quickbooks::Entity) ? value.to_dirty_hash : value
+        hsh[key] = value.is_a?(Quickbooks::Entity) ? value.to_dirty_hash(camelized_keys) : value
       end
       hsh
     end

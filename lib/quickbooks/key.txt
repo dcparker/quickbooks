@@ -1,0 +1,5 @@
+Property = a placeholder for a value. Manages typecasting and validations on a type of value.
+Entity = a Property that has Properties
+Base = an Entity that is a distinct, independent object that can be communicated about with Quickbooks.
+EmbeddedEntity = an Entity, like a Base, but always within the context of another Base.
+EntityCollection = a Collection of Entities, within a Base, that shows up as a Property but cannot be modified like an EmbeddedEntity or EmbeddedEntities

@@ -51,7 +51,9 @@ module Quickbooks
     def initialize(values=[])
       raise "Inheritance error: Must subclass EntityCollection, never use it directly!" if self.class == EntityCollection
       values = [values] unless values.is_a?(Array)
+      puts "EntityCollection - Values: #{values.inspect}" if $debug
       values.each do |value|
+        puts "Entity with value: #{value.inspect}" if $debug
         set << self.class.singular_class.new(value)
       end
     end
@@ -61,6 +63,9 @@ module Quickbooks
       v ? (set << v) : (@value ||= [])
     end
 
+    def [](i)
+      set[i]
+    end
     def length
       set.length
     end

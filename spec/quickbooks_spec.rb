@@ -2,23 +2,13 @@ require File.dirname(__FILE__) + '/spec_helper'
 
 describe Quickbooks do
   # This should be a before(:all) or something...
-  it "should use the test adapter and send test xml" do
+  before :all do
     Quickbooks::Base.use_adapter(:test)
     Quickbooks::Base.establish_connection
   end
 
   it "should generate a Customer query request" do
     Quickbooks::Base.connection.next_response(Quickbooks::ExampleResponses::MultipleCustomerQueryRs) do |request_xml|
-      # Now test request_xml to be correct. Should look something like this:
-      # <?xml version="1.0" ?>
-      # <?qbxml version="0.4.4" ?>
-      # <QBXML>
-      # <QBXMLMsgsRq onError="stopOnError">
-      # <CustomerQueryRq requestID="1">
-      #   <ActiveStatus>All</ActiveStatus>
-      # </CustomerQueryRq>
-      # </QBXMLMsgsRq>
-      # </QBXML>
       request = request_xml.formatted(:xml).to_hash
       request.should have_key('QBXML')
       request['QBXML'].should have_key('QBXMLMsgsRq')
@@ -30,16 +20,6 @@ describe Quickbooks do
 
   it "should grab the first client" do
     Quickbooks::Base.connection.next_response(Quickbooks::ExampleResponses::SingleCustomerQueryRs) do |request_xml|
-      # Test request_xml to be correct. Should look something like this:
-      # <?xml version="1.0" ?>
-      # <?qbxml version="0.4.4" ?>
-      # <QBXML>
-      # <QBXMLMsgsRq onError="stopOnError">
-      # <CustomerQueryRq requestID="2">
-      #   <MaxReturned>1</MaxReturned>
-      # </CustomerQueryRq>
-      # </QBXMLMsgsRq>
-      # </QBXML>
       request = request_xml.formatted(:xml).to_hash
       request.should have_key('QBXML')
       request['QBXML'].should have_key('QBXMLMsgsRq')
@@ -48,8 +28,13 @@ describe Quickbooks do
     end
 
     j = Quickbooks::Customer.first
-    j.last_name.value.should eql('Schmoe')
-    j.bill_address.state.value.should eql('TX')
+    j.last_name.should eql('Schmoe')
+    j.bill_address.state.should eql('TX')
+  end
+
+  it "should remember sample responses (test adapter)" do
+    Quickbooks::Customer.first.should be_is_a(Quickbooks::Customer)
+    Quickbooks::Customer.all.length.should eql(2)
   end
 
   it "should assign a *_ref property" do
@@ -59,11 +44,10 @@ describe Quickbooks do
     so.customer.class.name.should eql('Quickbooks::CustomerRef')
     so = Quickbooks::SalesOrder.new(:customer => joe, :txn_date => Date.today)
     so.customer.class.name.should eql('Quickbooks::CustomerRef')
-    so.customer.list_id.value.should eql(joe.list_id.value)
+    so.customer.should === joe
   end
 
   it "should operate internal associations with embedded entities" do
-    Quickbooks::Base.connection.next_response(Quickbooks::ExampleResponses::SingleCustomerQueryRs)
     j = Quickbooks::Customer.first
     j.should be_respond_to(:data_ext_ret=)
     j.data_exts.length.should eql(2)
@@ -74,34 +58,44 @@ describe Quickbooks do
     joe = Quickbooks::Customer.first
     # puts "Joe: #{joe} / #{joe.to_ref}"
     so = Quickbooks::SalesOrder.new(:customer => joe, :txn_date => Time.now)
-    Quickbooks::Base.connection.next_response(Quickbooks::ExampleResponses::SalesOrderAddRsA) do |request_xml|
-      puts "REQUEST XML:\n#{request_xml}"
-      # <QBXML>
-      # <QBXMLMsgsRq onError="stopOnError">
-      # <SalesOrderAddRq requestID="13">
-      #   <SalesOrderAdd>
-      #     <TxnDate>2008-08-12</TxnDate>
-      #   </SalesOrderAdd>
-      # </SalesOrderAddRq>
-      # </QBXMLMsgsRq>
-      # </QBXML>
-      request_xml.formatted(:xml).to_hash['QBXML']['QBXMLMsgsRq']['SalesOrderAddRq']['SalesOrderAdd'].should have_key('CustomerRef')
-    end
     so.should be_new_record
     so.should be_dirty
     so.should be_respond_to(:customer)
     so.customer.class.name.should eql('Quickbooks::CustomerRef')
-    so.customer.list_id.value.should eql(joe.to_ref.list_id.value)
+    so.customer.should == joe.to_ref
+    so.customer.should === joe
     so.customer.should be_dirty
     so.customer.dirty_attributes.should have_key('list_id')
+    so.customer.dirty_attributes({}, true).should have_key('ListID')
+    Quickbooks::Base.connection.next_response(Quickbooks::ExampleResponses::SalesOrderAddRsA) do |request_xml|
+      request_xml.formatted(:xml).to_hash['QBXML']['QBXMLMsgsRq']['SalesOrderAddRq']['SalesOrderAdd'].should have_key('TxnDate')
+      request_xml.formatted(:xml).to_hash['QBXML']['QBXMLMsgsRq']['SalesOrderAddRq']['SalesOrderAdd'].should have_key('CustomerRef')
+      request_xml.formatted(:xml).to_hash['QBXML']['QBXMLMsgsRq']['SalesOrderAddRq']['SalesOrderAdd']['CustomerRef'].should have_key('ListID')
+    end
     so.save
   end
 
   it "should instantiate an EmbeddedEntity correctly from XML" do
-    pending "TODO - Embedded Entities - from xml"
+    so = Qbxml::ResponseSet.new(Quickbooks::ExampleResponses::SalesOrderAddRsA).collect {|response| response.instantiate()}.flatten[0]
+    so.should be_is_a(Quickbooks::SalesOrder)
+    so.txn_id.should eql(98769876)
+    so.customer.should === Quickbooks::Customer.first
+    so.sales_order_lines.length.should eql(2)
+    so.sales_order_lines[0].should be_is_a(Quickbooks::SalesOrderLine)
+    so.sales_order_lines[1].item.list_id.should eql(8887779)
   end
 
-  it "should read from xml an Entity containing an EmbeddedEntity, modify it and generate a correct xml Mod request for the EmbeddedEntity"
+  it "should request an Entity containing an EmbeddedEntity, modify it, generate a correct Mod request for the EmbeddedEntity, and properly handle the Mod response" do
+    Quickbooks::Base.connection.next_response(Quickbooks::ExampleResponses::SalesOrderQueryRsA) do |request_xml|
+      request_xml.should eql(Quickbooks::ExampleResponses::SalesOrderQueryRqA)
+    end
+    $debug = true
+    so = Quickbooks::SalesOrder.first(:txn_id => 98769876)
+    $debug = false
+    # This doesn't work right because it doesn't end in *Ret. I guess we can't count on that... Might have to put in a stronger propety mapping to what the property can be named in return XMLs.
+    # I think I'll put this off until I map out the entire qbxmlops70.xml... d(:^P)
+    puts so.linked_txns.inspect
+  end
 
   # it "should update the first client's phone number" do
   #   pending

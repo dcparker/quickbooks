@@ -10,7 +10,7 @@ module Quickbooks
       def [](options)
         if self.name == 'Quickbooks::Property' && !options.is_a?(Hash)
           options = options.to_s.gsub(/Ret/,'')
-          "Quickbooks::#{options}".constantize rescue nil
+          "Quickbooks::#{options}".constantize
         else
           [self, options]
         end
@@ -122,6 +122,10 @@ module Quickbooks
       validations << ["Length is greater than #{max_length}", lambda {|value| value.length <= max_length}]
     end
 
+    def inspect
+      "<#{self.class} = #{@value.inspect}>"
+    end
+
     def value=(v)
       @value = v
       validate!
@@ -134,6 +138,13 @@ module Quickbooks
       value.to_s
     end
     alias :to_xml :to_s
+
+    def ==(other)
+      other.is_a?(self.class) ? value == other.value : value == other
+    end
+    def eql?(other)
+      self == other
+    end
 
     private
       def cast(v)
@@ -165,6 +176,10 @@ module Quickbooks
   end
   class StringProperty < ValueProperty
     validations << ["Must be a string value", lambda {|value| value.is_a?(String)}]
+
+    def ==(other)
+      other.is_a?(self.class) ? value == other.value : value == other.to_s
+    end
   end
   class DateTimeProperty < ValueProperty
     validations << ["Must be a datetime value", lambda {|value| value.is_a?(Date) || value.is_a?(DateTime) || value.is_a?(Time)}]
@@ -186,14 +201,14 @@ module Quickbooks
       end
   end
   class EnumProperty < ValueProperty
-    def self.values(*enum)
-      if enum.empty?
+    def self.enum(*values)
+      if values.empty?
         @values ||= []
       else
-        values.concat(enum)
+        enum.concat(values)
       end
     end
-    validations << ["Must be one of #{values.inspect}", lambda {|value| values.include?(value)}]
+    validations << ["Must be one of #{enum.inspect}", lambda {|value| enum.include?(value)}]
   end
   class AmountProperty < ValueProperty
     # validations << ["Must be a valid dollar value", lambda {|value| value.to_s =~ /[\d,]+\.\d\d/}]
@@ -236,6 +251,10 @@ module Quickbooks
       else
         raise ArgumentError, "Must be a Ref, an Ref-able Object, or a Hash"
       end
+    end
+
+    def ===(other)
+      self == other || self.list_id == other.list_id rescue false
     end
   end
 end
