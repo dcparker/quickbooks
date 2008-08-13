@@ -85,7 +85,7 @@ thequickbooks_qbxmlrequestsetxml
       end
 
       # Return only specific properties: Request.new(Customer, :query, :only => [:list_id, :full_name]); Quickbooks::Customer.first(:only => :list_id)
-      @ret_elements = @options.delete(:only).to_a.only(@klass.properties).ordered(@klass.properties).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
+      @ret_elements = @options.delete(:only).to_a.only(@klass.property_names).ordered(@klass.property_names).stringify_values.camelize_values!(Quickbooks::CAMELIZE_EXCEPTIONS) if @options.has_key?(:only)
 
       # Includes only valid filters + aliases for valid filters, # => {underscore/slashed keys + aliases}
       # then transforms aliased filters to real filters, # => {underscore/slashed keys}
@@ -145,10 +145,12 @@ thequickbooks_qbxmlrequestsetxml
                 deep_tag.call(k,v)
               }
             else
-              req.tag!(k.camelize) { v.each { |k,v| deep_tag.call(k,v) } }
+              req.tag!(k.camelize) { v.each { |k,e| deep_tag.call(k,e) } }
             end
+          elsif v.is_a?(Array)
+            req.tag!(k.camelize) { v.each {|e| deep_tag.call(k,e)} }
           else
-            req.tag!(k.camelize,uncast(v))
+            req.tag!(k.camelize,v.respond_to?(:to_xml) ? v.to_xml : uncast(v))
           end
         }
 
@@ -161,7 +163,7 @@ thequickbooks_qbxmlrequestsetxml
             req.tag!('EditSequence', @object.send(:edit_sequence))
           end
           # Then, all the dirty_attributes
-          deep_tag.call('',@object.to_dirty_hash) # (this is an hash statically ordered to the model's qbxml attribute order)
+          deep_tag.call('',@object.to_dirty_hash(true)) # (this is an hash statically ordered to the model's qbxml attribute order)
         elsif @type == :query && @object.class == @klass
           # Sent an instance object for a query - we should include the ListId/TxnId (then other filters?)
           req.tag!(@klass.ListOrTxn + 'ID', @object.send("#{@klass.ListOrTxn}Id".underscore))

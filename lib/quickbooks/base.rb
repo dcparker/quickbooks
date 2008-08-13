@@ -1,81 +1,20 @@
-# Contains Quickbooks::Base, which inherits from Quickbooks::Model. Simple objects like BillAddress and CreditCardInfo also
-# inherit from Quickbooks::Model, but any objects that are stored as their own 'entity' are below Quickbooks::Base in the
+# Contains Quickbooks::Base, which inherits from Quickbooks::Entity. Simple objects like BillAddress and CreditCardInfo also
+# inherit from Quickbooks::Entity, but any objects that are stored as their own 'entity' are below Quickbooks::Base in the
 # inheritance tree. Two models inherit directly from Quickbooks::Base: ListItem and Transaction. All other whole-entity
 # models inherit from either of these. Only a couple are written so far, as I've had use for them. They're pretty easy to
 # write though -- take a look at customer.rb, for example: all that needs defining for most models is any filters (and aliases)
 # specific to that model, and a listing of that model's attributes. If you write a model, please send in your code to
 # gems@behindlogic.com!
-# 
-# Inherits from ListItem:
-# - Account
-# - Account List
-# - BillingRate
-# - Class
-# - Currency
-# - Customer
-# - CustomerMessage
-# - CustomerType
-# - DateDrivenTerms
-# - Employee
-# - ItemDiscount
-# - ItemFixedAsset
-# - ItemGroup
-# - ItemInventory
-# - ItemInventoryAssembly
-# - ItemNonInventory
-# - ItemOtherCharge
-# - ItemPayment
-# - ItemSalesTax
-# - ItemSalesTaxGroup
-# - ItemService
-# - ItemSubtotal
-# - JobType
-# - OtherName
-# - PaymentMethod
-# - PayrollItemNonWage
-# - PayrollItemWage
-# - PriceLevel
-# - SalesRep
-# - SalesTaxCode
-# - ShipMethod
-# - StandardTerms
-# - TaxCode
-# - Template
-# - ToDo
-# - Vehicle
-# - Vendor
-# - VendorType
-# Inherits from Transaction:
-# - Bill
-# - BillPaymentCheck
-# - BillPaymentCreditCard
-# - BuildAssembly
-# - Charge
-# - Check
-# - CreditCardCharge
-# - CreditCardCredit
-# - CreditCardRefund
-# - CreditMemo
-# - Deposit
-# - Estimate
-# - InventoryAdjustment
-# - Invoice
-# - ItemReceipt
-# - JournalEntry
-# - PurchaseOrder
-# - ReceivePayment
-# - SalesOrder
-# - SalesReceipt
-# - SalesTaxPaymentCheck
-# - TimeTracking
-# - VehicleMileage
-# - VendorCredit
 
-require 'quickbooks/model'
+require 'quickbooks/ruby_magic'
 require 'qbxml'
 
 module Quickbooks
-  # Base is just base for ListItem and Transaction. It inherits from Model, just as Ref does.
+  # These were all created from the info in qbxmlops70.xml, found in the docs in the QBSDK package.
+  # This should be deprecated, but haven't implemented into qbxml yet.
+  CAMELIZE_EXCEPTIONS = {'list_id' => 'ListID', 'txn_id' => 'TxnID', 'owner_id' => 'OwnerID'}
+
+  # Base is just base for ListItem and Transaction. It inherits from Entity, just as Ref does.
   # 
   # Some Qbxml specifications require certain finder-options to be placed inside a containing entity, such as:
   #   ...
@@ -84,7 +23,7 @@ module Quickbooks
   #     <ToDeletedDate>#{(Time.now - 3*60*60).xmlschema}</ToDeletedDate>
   #   </DeletedDateRangeFilter>
   #   ...
-  # The Quickbooks Models define aliases to these "inside" options. The equivalent to the above [partial] request:
+  # The Quickbooks Entities define aliases to these "inside" options. The equivalent to the above [partial] request:
   #   Quickbooks::Deleted.all(:deleted_after => (Time.now - 5*60*60).xmlschema, :deleted_before => (Time.now - 3*60*60).xmlschema)
   # (Type-casting hasn't made it in yet.)
   # 
@@ -92,24 +31,38 @@ module Quickbooks
   # model class instead of through the deleted class. So Qbxml allows any class to ask for its deleted items through a call like
   # this:
   #   Quickbooks::Customer.deleted(:deleted_after => Time.now - 3*60*60)
-  class Base < Model
-
-    self.filter_aliases = {:limit => :max_returned}
-
-    # Stores a log of Qbxml::Response objects that were a result of methods performed on this object.
-    attr_accessor :response_log
-    def response_log #:nodoc:
-      @response_log || (@response_log = [])
-    end
-
-    # Returns success (true/false) status of the last quickbooks communication called from this object.
-    def success?
-      @response_log.last.success?
-    end
-    def inspect #:nodoc:
-      "#<#{self.class.name}:#{self.object_id} #{instance_variables.reject {|i| i.is_one_of?('@response_log', '@original_values')}.map {|i| "#{i}=#{instance_variable_get(i).inspect}"}.join(' ')}>"
-    end
+  class Base < Entity
     class << self
+      def inherited(klass)
+        def klass.valid_filters
+          (superclass.valid_filters + (@valid_filters ||= []))
+        end
+        def klass.filter_aliases
+          superclass.filter_aliases.slashed.merge(@filter_aliases ||= {}.slashed)
+        end
+        klass.instance_variable_set('@object_properties', {})
+      end
+      
+      def valid_filters=(v)
+        raise TypeError, "must be only strings" unless v.all? {|e| e.is_a?(String)}
+        @valid_filters = v
+      end
+      def valid_filters
+        (@valid_filters ||= [])
+      end
+      def filter_aliases=(v)
+        (@filter_aliases = v.empty? ? {} : v).slashed
+      end
+      def filter_aliases
+        @filter_aliases ||= {}
+      end
+      def camelized_valid_filters
+        cvf = []
+        valid_filters.each do |v|
+          cvf << (Quickbooks::CAMELIZE_EXCEPTIONS.has_key?(v) ? Quickbooks::CAMELIZE_EXCEPTIONS[v] : (v.is_a?(Symbol) ? v.to_s.camelize.to_sym : v.split('/').map {|e| e.camelize}.join('/')))
+        end
+        cvf
+      end
 
       def use_adapter(adapter)
         # Should complain if the adapter doesn't exist.
@@ -121,7 +74,7 @@ module Quickbooks
         @@connection_args = args
       end
 
-      # Establishes a connection to the Quickbooks RDS Server for all Model Classes
+      # Establishes a connection to the Quickbooks RDS Server for all Base Classes
       def establish_connection(*args)
         @@connection_adapter ||= use_adapter(:ole)
         @@connection = @@connection_adapter.new(*args)
@@ -136,7 +89,7 @@ module Quickbooks
       # 
       # This is normally not needed, but in the case that you may want to connect a separate connection to Quickbooks,
       # you can use this method to explicitly set the connection in a class that inherits from Quickbooks::Base.
-      #   Quickbooks::Models::Base.connection = Quickbooks::Connection.new('My Test App', 'C:\\Some File.QBW', 'user', 'pass')
+      #   Quickbooks::Base.connection = Quickbooks::Connection.new('My Test App', 'C:\\Some File.QBW', 'user', 'pass')
       def connection=(conn)
         raise ArgumentError, "Cannot set connection to anything but a (*)Adapter::Connection object" unless conn.class.name =~ /Adapter::Connection$/
         @connection = conn
@@ -163,7 +116,7 @@ module Quickbooks
         end
         objects = [] # This will hold and return the instantiated objects from the quickbooks response
         # The following line is subject to unexpected results: IF the response contains more than one object, it will re-instantiate only the last one.
-        self.request(reinstantiate || self, *args).each { |response| objects.concat(response.instantiate(reinstantiate)) } # Does not instantiate if it's an error, but simply records response into response_log
+        request(reinstantiate || self, *args).each { |response| objects.concat(response.instantiate(reinstantiate)) } # Does not instantiate if it's an error, but simply records response into response_log
         # Since Quickbooks only honors the Date in queries, we can filter the list further here to honor the Time requested.
         # filters we're triggered on: created_before, created_after, updated_before, updated_after, deleted_before, deleted_after
         if args[-1].is_a?(Hash) && !(time_filters = args[-1].stringify_keys.only('created_before', 'created_after', 'updated_before', 'updated_after', 'deleted_before', 'deleted_after')).empty?
@@ -202,25 +155,6 @@ module Quickbooks
         )
       end
 
-      # Instantiate a new object with just attributes, or an existing object replacing the attributes
-      def instantiate(obj_or_attrs={},attrs={})
-        if obj_or_attrs.is_a?(Quickbooks::Base)
-          obj = obj_or_attrs
-        else
-          obj = allocate
-          attrs = obj_or_attrs
-        end
-        attrs.each do |key,value|
-          if obj.respond_to?(key.to_s.underscore+'=')
-            obj.send(key.to_s.underscore+'=', value)
-            if orig = obj.instance_variable_get('@' + key.to_s.underscore)
-              obj.original_values[key.to_s.underscore] = orig.dup
-            end
-          end
-        end if attrs
-        obj # Will be either a nice object, or a Qbxml::Error object.
-      end
-
       # Queries Quickbooks for all of the objects of the current class's type. For example, Quickbooks::Customer.all will return an array of Quickbooks::Customer objects representing all customers.
       def all(filters={})
         filters.reverse_merge!(:active_status => 'All')
@@ -245,16 +179,23 @@ module Quickbooks
       end
     end
 
-    # Generates a new object that can be saved into Quickbooks once the required attributes are set.
-    def initialize(*args)
-      super # from Quickbooks::Model - sets the *args into attributes
-      @new_record = true
+    # Stores a log of Qbxml::Response objects that were a result of methods performed on this object.
+    attr_accessor :response_log
+    def response_log #:nodoc:
+      @response_log || (@response_log = [])
     end
 
-    # Returns true if the object is a new object (that doesn't represent an existing object in Quickbooks).
-    def new_record?
-      @new_record
+    # Returns success (true/false) status of the last quickbooks communication called from this object.
+    def success?
+      @response_log.last.success?
     end
+    def inspect #:nodoc:
+      "#<#{self.class.name}:#{self.object_id} #{instance_variables.reject {|i| i.is_one_of?('@response_log', '@original_values')}.map {|i| "#{i}=#{instance_variable_get(i).inspect}"}.join(' ')}>"
+    end
+
+    self.valid_filters = ['max_returned']
+
+    self.filter_aliases = {:limit => :max_returned}
 
     # Saves the attributes that have changed.
     # 
@@ -281,6 +222,7 @@ module Quickbooks
           # 'Revert' fields I didn't modify to equal the values of the more up-to-date record just loaded.
           # Fields I didn't modify: dirty_attributes - dirty_attributes(old_originals).keys
           (dirty_attributes - dirty_attributes(old_originals).keys).each_key do |at|
+# [TODO] Fix to use something like Property[at].writer_name
             self.send(at + '=', original_values[at]) if respond_to?(at + '=')
           end
           ret = self.save
@@ -311,3 +253,6 @@ module Quickbooks
     end
   end
 end
+
+require 'quickbooks/entities/list_item'
+require 'quickbooks/entities/transaction'

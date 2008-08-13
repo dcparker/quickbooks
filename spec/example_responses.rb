@@ -57,7 +57,7 @@ module Quickbooks
     123456789
 
     MultipleCustomerQueryRs = <<-123456789
-    <CustomerQueryRs requestID = "UUIDTYPE" statusCode = "INTTYPE" statusSeverity = "STRTYPE" statusMessage = "STRTYPE" retCount = "INTTYPE" iteratorRemainingCount = "INTTYPE" iteratorID = "UUIDTYPE">
+    <CustomerQueryRs>
       #{SingleCustomerQueryRs}
       <CustomerRet>
         <ListID>12346</ListID>
@@ -111,6 +111,98 @@ module Quickbooks
     </CustomerQueryRs>
     123456789
 
+    SalesOrderAddRqA = <<-123456789
+    <SalesOrderAddRq>
+      <SalesOrderAdd>
+        <CustomerRef>
+          <ListID>12345</ListID>
+          <FullName>Schmoe, Joe</FullName>
+        </CustomerRef>
+        <TxnDate>#{Date.today.strftime("%Y-%m-%d")}</TxnDate>
+        <RefNumber>12345678901</RefNumber>
+        <BillAddress>
+          <Addr1>999 Some Rd</Addr1>
+          <City>Other City</City>
+          <State>TX</State>
+          <PostalCode>88888</PostalCode>
+        </BillAddress>
+        <ShipAddress>
+          <Addr1>999 Some Rd</Addr1>
+          <City>Other City</City>
+          <State>TX</State>
+          <PostalCode>88888</PostalCode>
+        </ShipAddress>
+        <PONumber>99999-111-ABCDE-00000</PONumber>
+        <ShipDate>#{Date.today.strftime("%Y-%m-%d")}</ShipDate>
+        <Memo>This is a test SalesOrder Add request.</Memo>
+        <IsToBePrinted>true</IsToBePrinted>
+        <IsToBeEmailed>false</IsToBeEmailed>
+        <CustomerSalesTaxCodeRef>
+          <ListID>3987235</ListID>
+        </CustomerSalesTaxCodeRef>
+        <SalesOrderLineAdd>
+          <ItemRef>
+            <ListID>8887778</ListID>
+          </ItemRef>
+          <Desc>Some odd item</Desc>
+          <Quantity>1</Quantity>
+          <Rate>25.00</Rate>
+          <Amount>25.00</Amount>
+        </SalesOrderLineAdd>
+      </SalesOrderAdd>
+    </SalesOrderAddRq>
+    123456789
     
+    SalesOrderAddRsA = <<-123456789
+    <SalesOrderAddRs>
+      <SalesOrderRet>
+        <TxnID>98769876</TxnID>
+        <TimeCreated>#{Time.now.xmlschema}</TimeCreated>
+        <TimeModified>#{Time.now.xmlschema}</TimeModified>
+        <EditSequence>222</EditSequence>
+        <CustomerRef>
+          <ListID>12345</ListID>
+          <FullName>Schmoe, Joe</FullName>
+        </CustomerRef>
+        <TxnDate>#{Date.today.strftime("%Y-%m-%d")}</TxnDate>
+        <RefNumber>12345678901</RefNumber>
+        <BillAddress>
+          <Addr1>999 Some Rd</Addr1>
+          <City>Other City</City>
+          <State>TX</State>
+          <PostalCode>88888</PostalCode>
+        </BillAddress>
+        <ShipAddress>
+          <Addr1>999 Some Rd</Addr1>
+          <City>Other City</City>
+          <State>TX</State>
+          <PostalCode>88888</PostalCode>
+        </ShipAddress>
+        <PONumber>99999-111-ABCDE-00000</PONumber>
+        <ShipDate>#{Date.today.strftime("%Y-%m-%d")}</ShipDate>
+        <Subtotal>25.00</Subtotal>
+        <SalesTaxPercentage>6.0%</SalesTaxPercentage>
+        <SalesTaxTotal>1.50</SalesTaxTotal>
+        <TotalAmount>26.50</TotalAmount>
+        <IsFullyInvoiced>true</IsFullyInvoiced>
+        <Memo>This is a test SalesOrder Add request.</Memo>
+        <IsToBePrinted>true</IsToBePrinted>
+        <IsToBeEmailed>false</IsToBeEmailed>
+        <CustomerSalesTaxCodeRef>
+          <ListID>3987235</ListID>
+        </CustomerSalesTaxCodeRef>
+        <SalesOrderLineRet>
+          <TxnLineID>IDTYPE</TxnLineID>
+          <ItemRef>
+            <ListID>8887778</ListID>
+          </ItemRef>
+          <Desc>Some odd item</Desc>
+          <Quantity>1</Quantity>
+          <Rate>25.00</Rate>
+          <Amount>25.00</Amount>
+        </SalesOrderLineRet>
+      </SalesOrderRet>
+    </SalesOrderAddRs>
+    123456789
   end
 end

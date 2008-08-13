@@ -2,7 +2,6 @@
 # See Object, Class, and Hash.
 require 'rubygems'
 require 'hash_magic'
-
 require 'time'
 require 'date'
 
@@ -165,6 +164,10 @@ class Hash
 end
 
 class Array
+  def are_all?(klass)
+    all? {|e| e.is_a?(klass)}
+  end
+
   def stringify_values
     self.dup.stringify_values!
   end
@@ -204,9 +207,14 @@ class Array
 end
 
 class String
+  def constantize
+    Object.module_eval("::#{self}", __FILE__, __LINE__)
+  end
+
   def underscore
     gsub(/::/, '/').gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').gsub(/([a-z\d])([A-Z])/,'\1_\2').tr("-", "_").downcase
   end
+
   def camelize
     gsub(/\/(.?)/) { "::" + $1.upcase }.gsub(/(^|_)(.)/) { $2.upcase }
   end
