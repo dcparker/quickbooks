@@ -33,6 +33,7 @@ module Quickbooks
     end
     cascade :writable?
     cascade :name
+    cascade :camelized_name
     cascade :instance_variable_name
     cascade :writer_name
     cascade :reader_name
@@ -169,19 +170,19 @@ module Quickbooks
 
     # Returns a hash of the attributes and their (new) values that have been changed since the object was last loaded or updated from Quickbooks.
     # If you send in some attributes, it will compare to those given instead of original_attributes.
-    def dirty_attributes(compare={})
+    def dirty_attributes(compare={},camelized_keys=false)
       compare = original_values if compare.empty?
       pairs = {}
-      self.class.read_write.each do |column|
-        value = instance_variable_get('@' + column.instance_variable_name)
-        pairs[column.reader_name] = value if value != compare[column.reader_name]
+      self.class.read_write.each do |property|
+        value = instance_variable_get('@' + property.instance_variable_name)
+        pairs[camelized_keys ? property.camelized_name : property.reader_name] = value if value != compare[property.reader_name]
       end
       pairs
     end
 
-    def to_dirty_hash
+    def to_dirty_hash(camelized_keys=false)
       hsh = SlashedHash.new.ordered!(self.class.read_write.stringify_values)
-      self.dirty_attributes.each do |key,value|
+      self.dirty_attributes({}, camelized_keys).each do |key,value|
         hsh[key] = value.is_a?(Quickbooks::Entity) ? value.to_dirty_hash : value
       end
       hsh

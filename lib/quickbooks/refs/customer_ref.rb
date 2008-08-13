@@ -2,7 +2,7 @@ require 'quickbooks/properties/list_id'
 require 'quickbooks/properties/full_name'
 module Quickbooks
   class CustomerRef < Ref
-    properties ListID,
+    properties ListID[:writable => true],
                FullName[:max_length => {209 => [:QBD, :QBCA, :QBUK, :QBAU]}]
 
     def self.reader_name

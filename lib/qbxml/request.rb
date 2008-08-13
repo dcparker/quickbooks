@@ -163,7 +163,7 @@ thequickbooks_qbxmlrequestsetxml
             req.tag!('EditSequence', @object.send(:edit_sequence))
           end
           # Then, all the dirty_attributes
-          deep_tag.call('',@object.to_dirty_hash) # (this is an hash statically ordered to the model's qbxml attribute order)
+          deep_tag.call('',@object.to_dirty_hash(true)) # (this is an hash statically ordered to the model's qbxml attribute order)
         elsif @type == :query && @object.class == @klass
           # Sent an instance object for a query - we should include the ListId/TxnId (then other filters?)
           req.tag!(@klass.ListOrTxn + 'ID', @object.send("#{@klass.ListOrTxn}Id".underscore))

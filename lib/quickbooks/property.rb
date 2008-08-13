@@ -29,6 +29,10 @@ module Quickbooks
         @cannot_append = true
       end
 
+      def camelized_name
+        class_leaf_name
+      end
+
       attr_writer :reader_name, :writer_name
       def reader_name
         @reader_name ||= class_leaf_name.underscore
