@@ -1,3 +1,7 @@
+== THIS IS A PRELIMINARY VERSION!
+
+This is an early version of the QuickBooks RubyGem, and it has been completely rewritten from the ground up. The new version is actually generated from QuickBooks' QBXML DTDs, and therefore comprehensively covers the entire QuickBooks API. Please contact gems@behindlogic.com for information about the new rubygem.
+
 == Welcome to QuickBooks for Ruby
 
 The purpose of this gem is to perform connectivity and communication with Quickbooks, providing the user with access to quickbooks data as everyday ruby objects. This could be understood to be somewhat like an ORM, but it is different in that its models are predefined by the Quickbooks API.
