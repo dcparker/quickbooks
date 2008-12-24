@@ -34,4 +34,10 @@ module Quickbooks
   
   class PriceLevelRef < Ref
   end
+
+  class VendorTypeRef < Ref
+  end
+
+  class BillingRateRef < Ref
+  end
 end

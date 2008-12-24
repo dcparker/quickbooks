@@ -11,4 +11,7 @@ module Quickbooks
 
   class ShipAddress < Address
   end
+
+  class VendorAddress < Address
+  end
 end
