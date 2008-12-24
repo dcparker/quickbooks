@@ -10,7 +10,7 @@ module Qbxml
       end
       @set
     end
-    delegate_methods [:each, :length, :first, :last, :[], :map, :join] => :set
+    delegate_methods [:collect, :each, :each_with_index, :length, :first, :last, :[], :map, :join] => :set
     def <<(qbxml_response)
       if qbxml_response.is_a?(Qbxml::Response)
         set << qbxml_response
@@ -36,6 +36,7 @@ module Qbxml
     def append_from_xml(xml)
       self.append_from_hash(xml.formatted(:xml).to_hash)
     end
+
     def append_from_hash(hsh)
       to_append = []
       hsh = hsh['QBXML'] if hsh.has_key?('QBXML')
@@ -51,10 +52,10 @@ module Qbxml
 
     class << self
       def from_xml(xml)
-        new.append_from_xml(xml)
+        new(xml)
       end
       def from_hash(hsh)
-        new.append_from_hash(hsh)
+        new(hsh)
       end
     end
   end
@@ -79,6 +80,8 @@ module Qbxml
     end
     def import_from_hash(hsh)
       raise ArgumentError, "Hash passed to Qbxml::Response.from_hash must contain only one top-level key" unless hsh.keys.length == 1
+      hsh = hsh['QBXML'] if hsh.has_key?('QBXML')
+      hsh = hsh['QBXMLMsgsRs'] if hsh.has_key?('QBXMLMsgsRs')
       name = hsh.keys.first
       self.raw_response = hsh # (for development purposes)
       hsh = hsh[name]
@@ -118,10 +121,10 @@ module Qbxml
 
     class << self
       def from_xml(xml)
-        new.import_from_xml(xml)
+        new(xml)
       end
       def from_hash(hsh)
-        new.import_from_hash(hsh)
+        new(hsh)
       end
     end
 
