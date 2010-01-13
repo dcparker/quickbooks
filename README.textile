@@ -1,6 +1,6 @@
 h2. THIS IS A PRELIMINARY VERSION!
 
-This is an early version of the QuickBooks RubyGem, and has since been completely rewritten from the ground up. The new version is actually "generated from QuickBooks' QBXML DTDs":http://blog.behindlogic.com/2009/01/quickbooks-rubygem-meta-meta-ruby.html, and therefore comprehensively covers the entire QuickBooks API. To read more, head over to "http://www.behindlogic.com":http://www.behindlogic.com or contact gems [at] behindlogic.com.
+This is an early version of the QuickBooks RubyGem, and has since been completely rewritten from the ground up. The new, actually good version is located at "http://behindlogic.com":http://behindlogic.com, and is "generated from QuickBooks' QBXML DTDs":http://blog.behindlogic.com/2009/01/quickbooks-rubygem-meta-meta-ruby.html, and therefore comprehensively covers the entire QuickBooks API. To read more, head over to "http://behindlogic.com":http://behindlogic.com or contact gems [at] behindlogic.com.
 
 h1. Welcome to QuickBooks for Ruby
 
